@@ -323,8 +323,8 @@ def main() -> None:
         "--start-phase",
         type=int,
         default=4,
-        choices=[4, 7, 8],
-        help="Start at phase 4 (default), 7, or 8 for recovery runs.",
+        choices=[4, 6, 7, 8],
+        help="Start at phase 4 (default), 6, 7, or 8 for recovery runs.",
     )
     parser.add_argument(
         "--resume-demo-pass2-from",
@@ -364,7 +364,7 @@ def main() -> None:
     reac_dph = filtered_dir / "REAC_dph_confirmed.csv"
     outc_dph = filtered_dir / "OUTC_dph_confirmed.csv"
 
-    if args.start_phase <= 6:
+    if args.start_phase <= 6 and args.start_phase != 6:
         log("Phase 4+5: DEMO dedupe and teen US/unknown filter")
         max_primary_by_case: dict[str, int] = {}
         for file_idx, file_path in enumerate(demo_files, start=1):
@@ -434,6 +434,18 @@ def main() -> None:
                 handle.write(f"{pid}\n")
 
         log("Phase 6: filter DRUG/REAC/OUTC to teen IDs")
+        filter_by_ids_from_txt_files(drug_files, drug_teens, teen_ids, args.chunksize)
+        filter_by_ids_from_txt_files(reac_files, reac_teens, teen_ids, args.chunksize)
+        filter_by_ids_from_txt_files(outc_files, outc_teens, teen_ids, args.chunksize)
+    elif args.start_phase == 6:
+        if not demo_teens.exists():
+            raise FileNotFoundError("DEMO_teens.csv is required when --start-phase=6")
+        demo_ids = pd.read_csv(demo_teens, dtype=str, usecols=["PRIMARYID"], low_memory=False)
+        teen_ids = set(demo_ids["PRIMARYID"].astype(str).str.strip())
+        with teen_ids_txt.open("w", encoding="utf-8") as handle:
+            for pid in sorted(teen_ids):
+                handle.write(f"{pid}\n")
+        log(f"Phase 6: rebuilding DRUG/REAC/OUTC teens from DEMO_teens IDs ({len(teen_ids)} IDs)")
         filter_by_ids_from_txt_files(drug_files, drug_teens, teen_ids, args.chunksize)
         filter_by_ids_from_txt_files(reac_files, reac_teens, teen_ids, args.chunksize)
         filter_by_ids_from_txt_files(outc_files, outc_teens, teen_ids, args.chunksize)
