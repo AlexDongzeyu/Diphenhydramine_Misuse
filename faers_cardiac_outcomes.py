@@ -95,6 +95,7 @@ def add_acb_scores(
     cohort_df: pd.DataFrame,
     drug_df: pd.DataFrame,
     acb_lookup_df: pd.DataFrame,
+    drug_name_map_df: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Join ACB lookup to FAERS DRUG table and aggregate case-level ACB burden.
@@ -124,6 +125,22 @@ def add_acb_scores(
     drug_df["drug_name_raw"] = drug_df[drug_name_col].astype(str).str.strip()
     drug_df["drug_name_norm"] = drug_df["drug_name_raw"].map(normalize_drug_name)
 
+    if drug_name_map_df is not None and not drug_name_map_df.empty:
+        if "faers_name" not in drug_name_map_df.columns or "standard_generic_name" not in drug_name_map_df.columns:
+            raise ValueError("drug_name_map must contain faers_name and standard_generic_name")
+        name_map = drug_name_map_df.copy()
+        name_map["faers_name_norm"] = name_map["faers_name"].astype(str).map(normalize_drug_name)
+        name_map["standard_generic_name_norm"] = name_map["standard_generic_name"].astype(str).map(normalize_drug_name)
+        name_map = name_map[["faers_name_norm", "standard_generic_name_norm"]].drop_duplicates(
+            subset=["faers_name_norm"],
+            keep="first",
+        )
+
+        drug_df = drug_df.merge(name_map, left_on="drug_name_norm", right_on="faers_name_norm", how="left")
+        drug_df["drug_name_norm_for_match"] = drug_df["standard_generic_name_norm"].fillna(drug_df["drug_name_norm"])
+    else:
+        drug_df["drug_name_norm_for_match"] = drug_df["drug_name_norm"]
+
     acb_lookup_df["generic_name"] = acb_lookup_df["generic_name"].astype(str).str.strip()
     acb_lookup_df["drug_name_norm"] = acb_lookup_df["generic_name"].map(normalize_drug_name)
     acb_lookup_df["acb_score"] = pd.to_numeric(acb_lookup_df["acb_score"], errors="coerce").fillna(0)
@@ -132,7 +149,12 @@ def add_acb_scores(
         subset=["drug_name_norm"], keep="first"
     )
 
-    drug_with_acb = drug_df.merge(acb_map, on="drug_name_norm", how="left")
+    drug_with_acb = drug_df.merge(
+        acb_map,
+        left_on="drug_name_norm_for_match",
+        right_on="drug_name_norm",
+        how="left",
+    )
     matched_drug_rows = drug_with_acb[drug_with_acb["acb_score"].notna()].copy()
 
     case_scores = (
@@ -192,6 +214,11 @@ def main() -> None:
         help="Path to ACB lookup CSV with columns generic_name, acb_score",
     )
     parser.add_argument(
+        "--drug-name-map",
+        default="data/lookups/drug_name_map.csv",
+        help="Optional mapping CSV with columns faers_name, standard_generic_name",
+    )
+    parser.add_argument(
         "--out-cohort-acb",
         default="cohort_with_cardiac_and_acb.csv",
         help="Output CSV path for cohort with cardiac outcomes + ACB scores",
@@ -208,6 +235,7 @@ def main() -> None:
     reac_path = Path(args.reac)
     drug_path = Path(args.drug)
     acb_lookup_path = Path(args.acb_lookup)
+    drug_name_map_path = Path(args.drug_name_map)
     missing = [str(p) for p in (cohort_path, reac_path, drug_path, acb_lookup_path) if not p.exists()]
     if missing:
         print("Missing required input file(s):")
@@ -219,6 +247,7 @@ def main() -> None:
         print("- data/faers_input/reac.csv")
         print("- data/faers_input/drug.csv")
         print("- data/lookups/acb_lookup.csv")
+        print("- data/lookups/drug_name_map.csv")
         print("\nThen run:")
         print("python faers_cardiac_outcomes.py")
         return
@@ -227,12 +256,14 @@ def main() -> None:
     reac_df = pd.read_csv(args.reac, dtype=str, low_memory=False)
     drug_df = pd.read_csv(args.drug, dtype=str, low_memory=False)
     acb_lookup_df = pd.read_csv(args.acb_lookup, dtype=str, low_memory=False)
+    drug_name_map_df = pd.read_csv(args.drug_name_map, dtype=str, low_memory=False) if drug_name_map_path.exists() else None
 
     cohort_with_outcomes, cardiac_cases = add_cardiac_outcomes(cohort_df, reac_df)
     cohort_with_cardiac_and_acb, drug_acb_matches = add_acb_scores(
         cohort_with_outcomes,
         drug_df,
         acb_lookup_df,
+        drug_name_map_df,
     )
 
     cohort_with_outcomes.to_csv(args.out_cohort, index=False)
