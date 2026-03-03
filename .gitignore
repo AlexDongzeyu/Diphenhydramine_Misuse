@@ -1,4 +1,2 @@
-# Local FAERS datasets (keep placeholders, ignore heavy data)
-data/faers_raw/*
-data/faers_extracted/*
+# Local FAERS input scratch files
 data/faers_input/*
