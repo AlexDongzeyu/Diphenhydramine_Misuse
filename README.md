@@ -33,14 +33,3 @@ Youreka Research Project (2026)
    - Define final statistical plan (modeling, subgroup analysis, sensitivity checks).
 4. **Prepare research deliverables**
    - Methods write-up, variable definitions, cohort flow diagram, and results tables/figures.
-
-## Minimal run commands
-Full downstream rebuild (dedupe onward):
-```powershell
-& "C:/Users/dongz/OneDrive/Desktop/Project Code/Diphenhydramine_Misuse/.venv/Scripts/python.exe" "run_faers_pipeline_compact.py" --base-dir "." --extracted-root "data/faers_extracted" --rxnorm-rrf "RxNorm/RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF" --acb-csv "data/lookups/acb_lookup.csv" --chunksize 100000 --start-phase 4
-```
-
-Targeted teen-table repair (recommended if quarter mismatch reappears):
-```powershell
-& "C:/Users/dongz/OneDrive/Desktop/Project Code/Diphenhydramine_Misuse/.venv/Scripts/python.exe" "run_faers_pipeline_compact.py" --base-dir "." --extracted-root "data/faers_extracted" --rxnorm-rrf "RxNorm/RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF" --acb-csv "data/lookups/acb_lookup.csv" --chunksize 100000 --start-phase 6
-```
