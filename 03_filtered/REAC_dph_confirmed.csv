@@ -1,0 +1,318 @@
+PRIMARYID,CASEID,PT
+58700223,5870022,Agitation
+58700223,5870022,Bundle branch block right
+58700223,5870022,Electrocardiogram QT prolonged
+58700223,5870022,Gait disturbance
+58700223,5870022,Mydriasis
+58700223,5870022,Myocardial ischaemia
+58700223,5870022,Overdose
+58700223,5870022,Sinus tachycardia
+58700223,5870022,Somnolence
+90032071,9003207,Drug abuse
+90032071,9003207,Intentional overdose
+90045271,9004527,Intentional overdose
+90045271,9004527,Toxicity to various agents
+90058601,9005860,Completed suicide
+90108611,9010861,Toxicity to various agents
+90224201,9022420,Cardiac arrest
+90224201,9022420,Completed suicide
+90224201,9022420,Incorrect route of drug administration
+90224201,9022420,Respiratory arrest
+90224201,9022420,Toxicity to various agents
+90224221,9022422,Drug abuse
+90224221,9022422,Toxicity to various agents
+90243351,9024335,Toxicity to various agents
+90245161,9024516,Death
+90245161,9024516,Drug abuse
+90274131,9027413,Cardio-respiratory arrest
+90274131,9027413,Completed suicide
+90274131,9027413,Death
+90627191,9062719,Completed suicide
+90627191,9062719,Death
+90693641,9069364,Cardiac arrest
+90693641,9069364,Cardio-respiratory arrest
+90693641,9069364,Completed suicide
+90693641,9069364,Respiratory arrest
+90693731,9069373,Completed suicide
+90693901,9069390,Death
+90693901,9069390,Drug abuse
+90983191,9098319,Cardio-respiratory arrest
+90983191,9098319,Completed suicide
+91139661,9113966,Drug abuse
+91139671,9113967,Drug abuse
+91250571,9125057,Toxicity to various agents
+91771491,9177149,Bundle branch block right
+91771491,9177149,Electrocardiogram QT prolonged
+91771491,9177149,Myocardial ischaemia
+91771491,9177149,Overdose
+91771491,9177149,Sinus tachycardia
+91771491,9177149,Somnolence
+92069771,9206977,Drug ineffective
+92256191,9225619,Encephalopathy
+92256191,9225619,Histiocytosis haematophagic
+92256191,9225619,Hypoxia
+92453852,9245385,Anticholinergic syndrome
+92453852,9245385,Asthenia
+92453852,9245385,Cough
+92453852,9245385,Diarrhoea
+92453852,9245385,Histiocytosis haematophagic
+92453852,9245385,Hypoxia
+92453852,9245385,Menorrhagia
+92453852,9245385,Pancytopenia
+92453852,9245385,Posterior reversible encephalopathy syndrome
+92453852,9245385,Rash
+92453852,9245385,Renal failure
+92453852,9245385,Renal failure acute
+92453852,9245385,Respiratory distress
+92453852,9245385,Streptococcal sepsis
+92453852,9245385,Systemic inflammatory response syndrome
+93753692,9375369,Convulsion
+93753692,9375369,Frequent bowel movements
+93980041,9398004,Completed suicide
+93980041,9398004,Intentional overdose
+93980041,9398004,Toxicity to various agents
+94548401,9454840,Disorientation
+94548401,9454840,Euphoric mood
+94548401,9454840,Overdose
+94721651,9472165,Overdose
+94721651,9472165,Somnolence
+95022251,9502225,Dehydration
+95022251,9502225,Pneumonia
+95022251,9502225,Pulmonary mycosis
+96082232,9608223,Adrenal insufficiency
+96082232,9608223,Blood bilirubin increased
+96082232,9608223,Hypokalaemia
+96082232,9608223,Hypotension
+96083142,9608314,Adrenal insufficiency
+96083142,9608314,Blood bilirubin increased
+96083142,9608314,Clostridium difficile colitis
+96083142,9608314,Convulsion
+96083142,9608314,Decreased appetite
+96083142,9608314,Hypokalaemia
+96083142,9608314,Hypotension
+96083142,9608314,Leukoencephalopathy
+96083142,9608314,Mental status changes
+96083142,9608314,Skin exfoliation
+96083142,9608314,Vasodilatation
+96265191,9626519,Anticholinergic syndrome
+96265191,9626519,Drug-induced liver injury
+96265191,9626519,Hepatic encephalopathy
+96265191,9626519,Hyperammonaemia
+96265191,9626519,Overdose
+96265191,9626519,Toxicity to various agents
+97228301,9722830,Blood creatine phosphokinase increased
+97228301,9722830,Hypertension
+97228301,9722830,Pyrexia
+97228301,9722830,Tachycardia
+96596494,9659649,Mental status changes
+97958641,9795864,Drug abuse
+98000661,9800066,Drug abuse
+98019431,9801943,Drug abuse
+98059501,9805950,Toxicity to various agents
+98073191,9807319,Drug abuse
+98073251,9807325,Drug abuse
+98081211,9808121,Toxicity to various agents
+98139001,9813900,Drug abuse
+98166041,9816604,Death
+98171541,9817154,Drug abuse
+98172231,9817223,Intentional drug misuse
+98172231,9817223,Toxicity to various agents
+98227701,9822770,Intentional drug misuse
+98227701,9822770,Toxicity to various agents
+98288521,9828852,Intentional drug misuse
+98288521,9828852,Toxicity to various agents
+98289931,9828993,Toxicity to various agents
+98289971,9828997,Intentional drug misuse
+98289971,9828997,Toxicity to various agents
+98290291,9829029,Toxicity to various agents
+98341351,9834135,Death
+98341351,9834135,Drug abuse
+98357641,9835764,Death
+98432881,9843288,Death
+98517291,9851729,Death
+98517291,9851729,Drug abuse
+98542691,9854269,Death
+98542691,9854269,Drug abuse
+98584571,9858457,Death
+98584571,9858457,Toxicity to various agents
+98589201,9858920,Cardio-respiratory arrest
+98589201,9858920,Completed suicide
+98589661,9858966,Intentional drug misuse
+98590691,9859069,Intentional drug misuse
+98625701,9862570,Intentional drug misuse
+98631021,9863102,Intentional drug misuse
+98778031,9877803,Nasal cyst
+98778031,9877803,Urticaria
+99147531,9914753,Death
+99147531,9914753,Drug abuse
+99404141,9940414,Death
+99404151,9940415,Death
+99404151,9940415,Drug abuse
+99404181,9940418,Death
+99404181,9940418,Drug abuse
+99552122,9955212,Clonus
+99552122,9955212,Convulsion
+99552122,9955212,Drug withdrawal syndrome
+99552122,9955212,Hypertonia
+99552122,9955212,Implant site infection
+99552122,9955212,Irritability
+99552122,9955212,Malaise
+99552122,9955212,Muscle spasticity
+99552122,9955212,Pneumonia streptococcal
+99552122,9955212,Pulmonary congestion
+99552122,9955212,Purulent discharge
+99552122,9955212,Pyrexia
+99552122,9955212,Staphylococcal infection
+99552122,9955212,Tachycardia
+99552122,9955212,Wound dehiscence
+99642611,9964261,Completed suicide
+99642611,9964261,Death
+99670591,9967059,Drug abuse
+99758661,9975866,Drug abuse
+99782011,9978201,Death
+99782011,9978201,Drug abuse
+99782241,9978224,Death
+99782241,9978224,Drug abuse
+100419272,10041927,Abdominal pain
+100419272,10041927,Intentional self-injury
+100419272,10041927,Overdose
+100419272,10041927,Vomiting
+100446712,10044671,Abdominal pain
+100446712,10044671,Intentional self-injury
+100446712,10044671,Overdose
+100446712,10044671,Vomiting
+100512771,10051277,Dehydration
+100512771,10051277,Diarrhoea
+100512771,10051277,Hypoxia
+100512771,10051277,Nausea
+100526501,10052650,Dehydration
+100526501,10052650,Hypoxia
+100637902,10063790,Decreased appetite
+100637902,10063790,Dehydration
+100637902,10063790,Diarrhoea
+100637902,10063790,Faecal incontinence
+100637902,10063790,Hypoxia
+100637902,10063790,Nausea
+100930531,10093053,Feeling abnormal
+100930531,10093053,Head discomfort
+100930531,10093053,Psychomotor hyperactivity
+100930531,10093053,Sinus congestion
+100930551,10093055,Extra dose administered
+100930551,10093055,Wrong drug administered
+101562231,10156223,Abdominal pain
+101562231,10156223,Bezoar
+101562231,10156223,Body temperature increased
+101562231,10156223,Convulsion
+101562231,10156223,Electrocardiogram QRS complex prolonged
+101562231,10156223,Electrocardiogram QT prolonged
+101562231,10156223,Gastrointestinal sounds abnormal
+101562231,10156223,Nausea
+101562231,10156223,Overdose
+101562231,10156223,Sinus tachycardia
+101562231,10156223,Toxicity to various agents
+101705981,10170598,Electrocardiogram QT prolonged
+101705981,10170598,Left ventricular dysfunction
+101947511,10194751,Agitation
+101947511,10194751,Anhidrosis
+101947511,10194751,Gastrointestinal sounds abnormal
+101947511,10194751,Hallucination
+101947511,10194751,Hypertension
+101947511,10194751,Hyperthermia
+101947511,10194751,Mucous membrane disorder
+101947511,10194751,Mydriasis
+101947511,10194751,Myoclonus
+101947511,10194751,Overdose
+101947511,10194751,Rhabdomyolysis
+101947511,10194751,Sinus tachycardia
+101947511,10194751,Suicide attempt
+101947511,10194751,Tachypnoea
+101947511,10194751,Tremor
+101947511,10194751,Urinary retention
+101951741,10195174,Abnormal behaviour
+101951741,10195174,Agitation
+101951741,10195174,Anxiety
+101951741,10195174,Disorientation
+101951741,10195174,Electrocardiogram QT prolonged
+101951741,10195174,Flushing
+101951741,10195174,Gastrointestinal sounds abnormal
+101951741,10195174,Hallucination
+101951741,10195174,Hypertension
+101951741,10195174,Hyperthermia
+101951741,10195174,Intentional overdose
+101951741,10195174,Mucosal dryness
+101951741,10195174,Muscle rigidity
+101951741,10195174,Mydriasis
+101951741,10195174,Myoclonus
+101951741,10195174,Rhabdomyolysis
+101951741,10195174,Suicide attempt
+101951741,10195174,Sweat gland disorder
+101951741,10195174,Tachycardia
+101951741,10195174,Tachypnoea
+101951741,10195174,Tremor
+101951741,10195174,Urinary retention
+101967141,10196714,Adrenergic syndrome
+101967141,10196714,Agitation
+101967141,10196714,Anticholinergic syndrome
+101967141,10196714,Anxiety
+101967141,10196714,Clonus
+101967141,10196714,Dermatillomania
+101967141,10196714,Disorientation
+101967141,10196714,Electrocardiogram QT prolonged
+101967141,10196714,Flushing
+101967141,10196714,Gastrointestinal sounds abnormal
+101967141,10196714,Hallucination
+101967141,10196714,Hypertension
+101967141,10196714,Hyperthermia
+101967141,10196714,Intentional overdose
+101967141,10196714,Mucosal dryness
+101967141,10196714,Muscle rigidity
+101967141,10196714,Mydriasis
+101967141,10196714,Myoclonus
+101967141,10196714,Rhabdomyolysis
+101967141,10196714,Serotonin syndrome
+101967141,10196714,Sinus tachycardia
+101967141,10196714,Sweat gland disorder
+101967141,10196714,Tachypnoea
+101967141,10196714,Tremor
+101967141,10196714,Urinary retention
+102023521,10202352,Agitation
+102023521,10202352,Anxiety
+102023521,10202352,Blood bicarbonate decreased
+102023521,10202352,Blood calcium decreased
+102023521,10202352,Blood glucose increased
+102023521,10202352,Blood magnesium decreased
+102023521,10202352,Blood potassium decreased
+102023521,10202352,Clonus
+102023521,10202352,Dermatillomania
+102023521,10202352,Disorientation
+102023521,10202352,Electrocardiogram QRS complex shortened
+102023521,10202352,Electrocardiogram QT prolonged
+102023521,10202352,Flushing
+102023521,10202352,Gastrointestinal sounds abnormal
+102023521,10202352,Hallucination
+102023521,10202352,Hyperhidrosis
+102023521,10202352,Hypertension
+102023521,10202352,Hyperthermia
+102023521,10202352,Intentional overdose
+102023521,10202352,Mucosal dryness
+102023521,10202352,Muscle rigidity
+102023521,10202352,Mydriasis
+102023521,10202352,Myoclonus
+102023521,10202352,Rhabdomyolysis
+102023521,10202352,Sinus tachycardia
+102023521,10202352,Suicide attempt
+102023521,10202352,Tachypnoea
+102023521,10202352,Toxicity to various agents
+102023521,10202352,Tremor
+102023521,10202352,Urinary retention
+102027092,10202709,Adrenergic syndrome
+102027092,10202709,Anticholinergic syndrome
+102027092,10202709,Electrocardiogram QT prolonged
+102027092,10202709,Intentional overdose
+102027092,10202709,Rhabdomyolysis
+102027092,10202709,Serotonin syndrome
+97932444,9793244,Dehydration
+97932444,9793244,Hypoxia
+99261732,9926173,Anaphylactic reaction
+99261732,9926173,Asthma
+99261732,9926173,Throat tightness
