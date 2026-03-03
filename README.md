@@ -1,6 +1,6 @@
 # Anticholinergic Burden-Based Analysis of Cardiac Toxicity in Adolescent Diphenhydramine Overdose Using FAERS
 
-Eureka Research Project (2026)
+Youreka Research Project (2026)
 
 ## Project status
 - Pipeline is operational and currently completes through final output using `run_faers_pipeline_compact.py`.
