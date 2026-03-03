@@ -1,0 +1,7 @@
+# Local FAERS datasets (keep placeholders, ignore heavy data)
+data/faers_raw/*
+data/faers_extracted/*
+data/faers_input/*
+!data/faers_raw/.gitkeep
+!data/faers_extracted/.gitkeep
+!data/faers_input/.gitkeep
