@@ -1,0 +1,12 @@
+variable,type,n,mean,sd,median,iqr,level,count,percent
+AGE,continuous,86.0,16.837209302325583,1.8205394489241147,18.0,3.0,,,
+total_acb_with_dph,continuous,86.0,2.86046511627907,2.7998436540285785,3.0,4.0,,,
+total_acb_codrugs_only,continuous,86.0,1.186046511627907,2.1936358639695808,0.0,1.0,,,
+n_codrugs,continuous,86.0,3.13953488372093,2.5305790581124006,3.0,2.0,,,
+max_severity,continuous,86.0,3.127906976744186,1.2251915732834888,4.0,2.0,,,
+age_group,categorical,,,,,,18-19,46.0,53.48837209302325
+age_group,categorical,,,,,,13-15,29.0,33.72093023255814
+age_group,categorical,,,,,,16-17,11.0,12.790697674418606
+pre_post_warning,categorical,,,,,,0,86.0,100.0
+cardiac_any,categorical,,,,,,0,76.0,88.37209302325581
+cardiac_any,categorical,,,,,,1,10.0,11.627906976744185

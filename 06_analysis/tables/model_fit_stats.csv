@@ -1,0 +1,3 @@
+model,n,llf,aic,bic,pseudo_r2_mcfadden,fit_method
+full,86,,,,,regularized_l1
+pre,86,-24.577871580262816,59.15574316052563,71.42747964179317,0.2049156696727612,mle
