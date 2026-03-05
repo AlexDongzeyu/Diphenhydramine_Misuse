@@ -16,6 +16,32 @@ Youreka Research Project (2026)
 - Current confirmed adolescent DPH cohort size: **86 unique PRIMARYID**.
 - Quarter-mismatch/data-loss issue in teen-linked tables was repaired by rebuilding from **Phase 6** and validating ID-subset consistency.
 
+## What has been done (Alex branch)
+- Added an advanced analysis workflow and outputs under `06_analysis/`.
+- Implemented reproducible scripts:
+   - `06_analysis/run_advanced_analysis.py` (executed in this workspace)
+   - `06_analysis/run_advanced_analysis.R` (template for R environment)
+- Generated statistical result tables:
+   - `06_analysis/tables/table1_descriptive.csv`
+   - `06_analysis/tables/normality_shapiro.csv`
+   - `06_analysis/tables/nonparametric_tests.csv`
+   - `06_analysis/tables/posthoc_dunn_age_group.csv`
+   - `06_analysis/tables/table2_logit_full.csv`
+   - `06_analysis/tables/table2_logit_pre.csv`
+   - `06_analysis/tables/table2_logit_post.csv`
+   - `06_analysis/tables/model_fit_stats.csv`
+- Generated polished figures for poster/manuscript use:
+   - `06_analysis/figures/figure1_flowchart.png`
+   - `06_analysis/figures/figure2_acb_cardiac_boxplot.png`
+   - `06_analysis/figures/figure3_acb_agegroup_boxplot.png`
+   - `06_analysis/figures/figure4_spearman_acb_severity.png`
+   - `06_analysis/figures/figure5_forest_logit_full.png`
+   - `06_analysis/figures/figure6_dashboard_overview.png`
+- Added readability improvements to reduce overlap and clipping (axis headroom, spacing, margins, layout controls).
+- Added run metadata and summary:
+   - `06_analysis/run_metadata.json`
+   - `06_analysis/analysis_summary.md`
+
 ## Current workspace notes
 - This workspace uses:
   - FAERS extracted source at `data/faers_extracted/`
@@ -29,7 +55,7 @@ Youreka Research Project (2026)
    - Align raw folder layout to one standard (`01_raw/...` vs current mixed `data/...` + `RxNorm/...`) for long-term reproducibility.
 2. **Regenerate `02_combined/*_all.csv` if strict archival completeness is required**
    - These files are very large and currently not the active dependency for compact runs.
-3. **Run and document analysis/statistics** from `05_final/analysis_table.csv`
-   - Define final statistical plan (modeling, subgroup analysis, sensitivity checks).
+3. **Finalize inferential reporting for manuscript/presentation**
+   - Select primary model specification and finalize interpretation text for ORs/CIs and subgroup findings.
 4. **Prepare research deliverables**
    - Methods write-up, variable definitions, cohort flow diagram, and results tables/figures.
