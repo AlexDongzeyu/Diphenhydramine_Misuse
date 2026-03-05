@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch
+from matplotlib import patheffects
 from scipy.stats import shapiro, mannwhitneyu, kruskal, spearmanr
 import scikit_posthocs as sp
 import statsmodels.formula.api as smf
@@ -21,6 +22,16 @@ TAB_DIR = OUT_DIR / "tables"
 
 for path in [FIG_DIR, TAB_DIR]:
     path.mkdir(parents=True, exist_ok=True)
+
+
+PALETTE = {
+    "blue": "#1f4e79",
+    "teal": "#1f7a8c",
+    "orange": "#f59e0b",
+    "red": "#b91c1c",
+    "slate": "#334155",
+    "bg": "#f8fafc",
+}
 
 
 def p_stars(p: float) -> str:
@@ -140,13 +151,49 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     u_stat, p_mw = mannwhitneyu(g0, g1, alternative="two-sided")
     rows.append({"analysis": "A_mann_whitney_acb_vs_cardiac", "statistic": u_stat, "p_value": p_mw})
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, ax = plt.subplots(figsize=(7, 5.2))
     plot_df = df.copy()
     plot_df["cardiac_any"] = plot_df["cardiac_any"].map({0: "No Cardiac", 1: "Cardiac"})
-    sns.boxplot(data=plot_df, x="cardiac_any", y="total_acb_codrugs_only", ax=ax)
+    sns.violinplot(
+        data=plot_df,
+        x="cardiac_any",
+        y="total_acb_codrugs_only",
+        hue="cardiac_any",
+        legend=False,
+        inner=None,
+        cut=0,
+        linewidth=0,
+        palette=["#bfdbfe", "#fecaca"],
+        ax=ax,
+    )
+    sns.boxplot(
+        data=plot_df,
+        x="cardiac_any",
+        y="total_acb_codrugs_only",
+        hue="cardiac_any",
+        legend=False,
+        width=0.25,
+        showcaps=True,
+        boxprops={"facecolor": "white", "zorder": 3},
+        medianprops={"color": PALETTE["red"], "linewidth": 2},
+        whiskerprops={"linewidth": 1.5},
+        ax=ax,
+    )
+    sns.stripplot(
+        data=plot_df,
+        x="cardiac_any",
+        y="total_acb_codrugs_only",
+        color=PALETTE["slate"],
+        alpha=0.45,
+        size=4,
+        jitter=0.15,
+        ax=ax,
+    )
     ymax = np.nanmax(plot_df["total_acb_codrugs_only"]) if plot_df["total_acb_codrugs_only"].notna().any() else 1
-    ax.text(0.5, ymax * 1.05 if ymax > 0 else 0.5, f"p={p_mw:.3g} {p_stars(p_mw)}", ha="center")
-    ax.set_title("Figure 2: ACB (co-drugs only) by cardiac outcome")
+    ax.set_ylim(top=ymax * 1.16 if ymax > 0 else 1)
+    ann = ax.text(0.5, ymax * 1.07 if ymax > 0 else 0.5, f"Mann-Whitney p={p_mw:.3g} {p_stars(p_mw)}", ha="center", color=PALETTE["red"], fontweight="bold")
+    ann.set_path_effects([patheffects.withStroke(linewidth=3, foreground="white")])
+    ax.set_title("Figure 2: ACB (co-drugs only) by cardiac outcome", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel("Cardiac outcome")
     ax.set_ylabel("Total ACB (co-drugs only)")
     fig.tight_layout()
@@ -160,12 +207,48 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     dunn_df = sp.posthoc_dunn(df, val_col="total_acb_with_dph", group_col="age_group", p_adjust="bonferroni")
     dunn_df.to_csv(TAB_DIR / "posthoc_dunn_age_group.csv")
 
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(7.5, 5.2))
     order = ["13-15", "16-17", "18-19"]
-    sns.boxplot(data=df, x="age_group", y="total_acb_with_dph", order=order, ax=ax)
+    sns.boxplot(
+        data=df,
+        x="age_group",
+        y="total_acb_with_dph",
+        order=order,
+        hue="age_group",
+        legend=False,
+        palette=["#dbeafe", "#a7f3d0", "#fde68a"],
+        width=0.55,
+        ax=ax,
+    )
+    sns.stripplot(
+        data=df,
+        x="age_group",
+        y="total_acb_with_dph",
+        order=order,
+        color=PALETTE["slate"],
+        alpha=0.35,
+        size=3.5,
+        jitter=0.2,
+        ax=ax,
+    )
     ymax = np.nanmax(df["total_acb_with_dph"]) if df["total_acb_with_dph"].notna().any() else 1
-    ax.text(1, ymax * 1.05 if ymax > 0 else 0.5, f"Kruskal p={p_kw:.3g} {p_stars(p_kw)}", ha="center")
-    ax.set_title("Figure 3: ACB (with DPH) across age groups")
+    ax.set_ylim(top=ymax * 1.30 if ymax > 0 else 1.5)
+    ax.text(1, ymax * 1.05 if ymax > 0 else 0.5, f"Kruskal p={p_kw:.3g} {p_stars(p_kw)}", ha="center", color=PALETTE["red"], fontweight="bold")
+
+    level_map = {lvl: idx for idx, lvl in enumerate(order)}
+    pair_y = ymax * 1.12 if ymax > 0 else 1
+    for a in order:
+        for b in order:
+            if a >= b:
+                continue
+            pval = dunn_df.loc[a, b]
+            if pd.notna(pval) and pval < 0.05:
+                xa, xb = level_map[a], level_map[b]
+                ax.plot([xa, xa, xb, xb], [pair_y, pair_y * 1.01, pair_y * 1.01, pair_y], color=PALETTE["slate"], lw=1.3)
+                ax.text((xa + xb) / 2, pair_y * 1.015, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
+                pair_y *= 1.06
+
+    ax.set_title("Figure 3: ACB (with DPH) across age groups", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel("Age group")
     ax.set_ylabel("Total ACB (with DPH)")
     fig.tight_layout()
@@ -175,9 +258,17 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
     rows.append({"analysis": "C_spearman_acb_vs_severity", "statistic": rho, "p_value": p_sp})
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-    sns.regplot(data=df, x="total_acb_codrugs_only", y="max_severity", lowess=True, scatter_kws={"alpha": 0.8}, ax=ax)
-    ax.set_title(f"Figure 4: Spearman ACB vs Severity (rho={rho:.2f}, p={p_sp:.3g})")
+    fig, ax = plt.subplots(figsize=(7, 5.2))
+    sns.regplot(
+        data=df,
+        x="total_acb_codrugs_only",
+        y="max_severity",
+        lowess=True,
+        scatter_kws={"alpha": 0.75, "s": 40, "color": PALETTE["teal"]},
+        line_kws={"color": PALETTE["orange"], "lw": 2.5},
+        ax=ax,
+    )
+    ax.set_title(f"Figure 4: Spearman ACB vs Severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel("Total ACB (co-drugs only)")
     ax.set_ylabel("Max severity")
     fig.tight_layout()
@@ -268,19 +359,19 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     forest_df = tbl_full[~tbl_full["term"].eq("Intercept")].copy()
     forest_df = forest_df.sort_values("OR")
 
-    fig, ax = plt.subplots(figsize=(8, max(4, 0.45 * len(forest_df))))
+    fig, ax = plt.subplots(figsize=(9.2, max(4.2, 0.55 * len(forest_df))))
     y = np.arange(len(forest_df))
     has_ci = forest_df["CI_low"].notna().all() and forest_df["CI_high"].notna().all()
     if has_ci:
-        ax.hlines(y, forest_df["CI_low"], forest_df["CI_high"], color="#4C78A8", lw=2)
-    ax.scatter(forest_df["OR"], y, color="#F58518", s=40, zorder=3)
+        ax.hlines(y, forest_df["CI_low"], forest_df["CI_high"], color=PALETTE["teal"], lw=2.3)
+    ax.scatter(forest_df["OR"], y, color=PALETTE["orange"], s=55, zorder=3, edgecolor="white", linewidth=0.8)
     ax.axvline(1.0, color="black", ls="--", lw=1)
     ax.set_yticks(y)
     ax.set_yticklabels(forest_df["term"])
     ax.set_xscale("log")
     ax.set_xlabel("Odds Ratio (log scale)")
-    ax.set_title("Figure 5: Logistic regression ORs (95% CI)")
-    fig.tight_layout()
+    ax.set_title("Figure 5: Logistic regression ORs (95% CI)", color=PALETTE["blue"], fontweight="bold")
+    fig.subplots_adjust(left=0.34, right=0.98, top=0.90, bottom=0.12)
     fig.savefig(FIG_DIR / "figure5_forest_logit_full.png", dpi=220)
     plt.close(fig)
 
@@ -300,14 +391,14 @@ def plot_flowchart(counts: dict[str, int]) -> None:
     ]
 
     for (x, y, w, h, text) in boxes:
-        rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02", edgecolor="black", facecolor="#E8EEF7")
+        rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.02", edgecolor=PALETTE["blue"], facecolor="#e2e8f0", linewidth=1.4)
         ax.add_patch(rect)
-        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=10)
+        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=10, color=PALETTE["slate"], fontweight="bold")
 
     for y1, y2 in [(0.80, 0.74), (0.62, 0.56), (0.44, 0.38)]:
         ax.annotate("", xy=(0.5, y2), xytext=(0.5, y1), arrowprops=dict(arrowstyle="->", lw=1.4))
 
-    ax.set_title("Figure 1: Cohort flow summary", fontsize=12)
+    ax.set_title("Figure 1: Cohort flow summary", fontsize=12, color=PALETTE["blue"], fontweight="bold")
     fig.tight_layout()
     fig.savefig(FIG_DIR / "figure1_flowchart.png", dpi=220)
     plt.close(fig)
@@ -340,8 +431,32 @@ def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame
     (OUT_DIR / "analysis_summary.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def make_dashboard() -> None:
+    fig = plt.figure(figsize=(14, 10), facecolor=PALETTE["bg"], constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, wspace=0.25, hspace=0.3)
+
+    files = [
+        FIG_DIR / "figure1_flowchart.png",
+        FIG_DIR / "figure2_acb_cardiac_boxplot.png",
+        FIG_DIR / "figure4_spearman_acb_severity.png",
+        FIG_DIR / "figure5_forest_logit_full.png",
+    ]
+    titles = ["Cohort Flow", "ACB vs Cardiac", "ACB vs Severity", "Adjusted Logistic ORs"]
+
+    for i, (img_path, title) in enumerate(zip(files, titles)):
+        ax = fig.add_subplot(gs[i // 2, i % 2])
+        img = plt.imread(img_path)
+        ax.imshow(img)
+        ax.axis("off")
+        ax.set_title(title, fontsize=12, fontweight="bold", color=PALETTE["blue"], pad=10)
+
+    fig.suptitle("Integrated Statistical Dashboard: Adolescent Diphenhydramine FAERS Cohort", fontsize=15, fontweight="bold", color=PALETTE["blue"])
+    fig.savefig(FIG_DIR / "figure6_dashboard_overview.png", dpi=240)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
-    sns.set_theme(style="whitegrid")
+    sns.set_theme(style="whitegrid", rc={"axes.facecolor": "#ffffff", "figure.facecolor": PALETTE["bg"]})
 
     counts = flow_counts()
     plot_flowchart(counts)
@@ -353,6 +468,7 @@ if __name__ == "__main__":
     fit = logistic_and_forest(df)
 
     save_summary(counts, norm, tests, fit)
+    make_dashboard()
 
     (OUT_DIR / "run_metadata.json").write_text(
         json.dumps({
