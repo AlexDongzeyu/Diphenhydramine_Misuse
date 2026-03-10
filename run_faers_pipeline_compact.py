@@ -11,12 +11,20 @@ DPH_TERMS = {
     "DIPHENHYDRAMINE CITRATE",
     "BENADRYL",
     "BENADRYL ALLERGY",
+    "BANOPHEN",
     "NYTOL",
     "SOMINEX",
     "SIMPLY SLEEP",
     "ZZZ QUIL",
+    "ZZZQUIL",
+    "TYLENOL PM",
+    "ADVIL PM",
+    "MOTRIN PM",
+    "UNISOM",
     "DPH",
 }
+DPH_NORMALIZED_TERMS = {re.sub(r"[^A-Z0-9]+", "", term) for term in DPH_TERMS}
+DPH_ROLE_CODES = {"PS", "SS", "C", "I"}
 TIER1 = {
     "Electrocardiogram QT prolonged",
     "Electrocardiogram QT interval abnormal",
@@ -132,10 +140,16 @@ def identify_dph_ids(drug_teens_csv: Path, chunksize: int) -> set[str]:
         drugname = get_series_str(c, "DRUGNAME").str.upper().str.strip()
         prod_ai = get_series_str(c, "PROD_AI").str.upper().str.strip()
         role = get_series_str(c, "ROLE_COD").str.upper().str.strip()
+        drugname_norm = drugname.str.replace(r"[^A-Z0-9]+", "", regex=True)
+        prod_ai_norm = prod_ai.str.replace(r"[^A-Z0-9]+", "", regex=True)
 
-        pass1 = drugname.isin(DPH_TERMS) | drugname.str.contains("DIPHENHYDRAMIN", na=False)
-        pass2 = prod_ai.str.contains("DIPHENHYDRAMIN", na=False)
-        role_ok = role.isin({"PS", "SS"})
+        pass1 = (
+            drugname.isin(DPH_TERMS)
+            | drugname_norm.isin(DPH_NORMALIZED_TERMS)
+            | drugname.str.contains("DIPHENHYDRAMIN", na=False)
+        )
+        pass2 = prod_ai.str.contains("DIPHENHYDRAMIN", na=False) | prod_ai_norm.isin(DPH_NORMALIZED_TERMS)
+        role_ok = role.isin(DPH_ROLE_CODES)
 
         matched = c[(pass1 | pass2) & role_ok]
         if not matched.empty:
@@ -295,19 +309,16 @@ def build_final_table(
         final_df[["total_acb_with_dph", "total_acb_codrugs_only"]].fillna(0)
     )
 
-    final_df["YEAR"] = final_df.get("EVENT_DT", "").astype(str).str.slice(0, 4)
-    final_df["MONTH"] = pd.to_numeric(final_df.get("EVENT_DT", "").astype(str).str.slice(4, 6), errors="coerce")
-    final_df["YEAR_NUM"] = pd.to_numeric(final_df["YEAR"], errors="coerce")
+    final_df["YEAR"] = pd.to_numeric(
+        final_df.get("EVENT_DT", "").astype(str).str.slice(0, 4),
+        errors="coerce",
+    )
 
     age_num = pd.to_numeric(final_df.get("AGE", ""), errors="coerce")
     final_df["age_group"] = pd.cut(age_num, bins=[12, 15, 17, 19], labels=["13-15", "16-17", "18-19"])
 
-    final_df["pre_post_warning"] = (
-        (final_df["YEAR_NUM"] > 2020)
-        | ((final_df["YEAR_NUM"] == 2020) & (final_df["MONTH"].fillna(0) >= 9))
-    ).astype(int)
+    final_df["pre_post_warning"] = final_df["YEAR"].ge(2020).fillna(False).astype(int)
 
-    final_df = final_df.drop(columns=["MONTH", "YEAR_NUM"])
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     final_df.to_csv(out_csv, index=False)
 

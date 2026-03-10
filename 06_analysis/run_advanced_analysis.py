@@ -10,6 +10,7 @@ from matplotlib import patheffects
 from scipy.stats import shapiro, mannwhitneyu, kruskal, spearmanr
 import scikit_posthocs as sp
 import statsmodels.formula.api as smf
+from sklearn.metrics import roc_auc_score, roc_curve
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +74,7 @@ def prepare_df() -> pd.DataFrame:
     df["age_group"] = df["age_group"].astype(str)
     df["cardiac_any"] = df["cardiac_any"].fillna(0).astype(int)
     df["pre_post_warning"] = df["pre_post_warning"].fillna(0).astype(int)
+    df["YEAR"] = pd.to_numeric(df.get("YEAR", np.nan), errors="coerce")
     return df
 
 
@@ -151,55 +153,6 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     u_stat, p_mw = mannwhitneyu(g0, g1, alternative="two-sided")
     rows.append({"analysis": "A_mann_whitney_acb_vs_cardiac", "statistic": u_stat, "p_value": p_mw})
 
-    fig, ax = plt.subplots(figsize=(7, 5.2))
-    plot_df = df.copy()
-    plot_df["cardiac_any"] = plot_df["cardiac_any"].map({0: "No Cardiac", 1: "Cardiac"})
-    sns.violinplot(
-        data=plot_df,
-        x="cardiac_any",
-        y="total_acb_codrugs_only",
-        hue="cardiac_any",
-        legend=False,
-        inner=None,
-        cut=0,
-        linewidth=0,
-        palette=["#bfdbfe", "#fecaca"],
-        ax=ax,
-    )
-    sns.boxplot(
-        data=plot_df,
-        x="cardiac_any",
-        y="total_acb_codrugs_only",
-        hue="cardiac_any",
-        legend=False,
-        width=0.25,
-        showcaps=True,
-        boxprops={"facecolor": "white", "zorder": 3},
-        medianprops={"color": PALETTE["red"], "linewidth": 2},
-        whiskerprops={"linewidth": 1.5},
-        ax=ax,
-    )
-    sns.stripplot(
-        data=plot_df,
-        x="cardiac_any",
-        y="total_acb_codrugs_only",
-        color=PALETTE["slate"],
-        alpha=0.45,
-        size=4,
-        jitter=0.15,
-        ax=ax,
-    )
-    ymax = np.nanmax(plot_df["total_acb_codrugs_only"]) if plot_df["total_acb_codrugs_only"].notna().any() else 1
-    ax.set_ylim(top=ymax * 1.16 if ymax > 0 else 1)
-    ann = ax.text(0.5, ymax * 1.07 if ymax > 0 else 0.5, f"Mann-Whitney p={p_mw:.3g} {p_stars(p_mw)}", ha="center", color=PALETTE["red"], fontweight="bold")
-    ann.set_path_effects([patheffects.withStroke(linewidth=3, foreground="white")])
-    ax.set_title("Figure 2: ACB (co-drugs only) by cardiac outcome", color=PALETTE["blue"], fontweight="bold")
-    ax.set_xlabel("Cardiac outcome")
-    ax.set_ylabel("Total ACB (co-drugs only)")
-    fig.tight_layout()
-    fig.savefig(FIG_DIR / "figure2_acb_cardiac_boxplot.png", dpi=220)
-    plt.close(fig)
-
     groups = [g.dropna().values for _, g in df.groupby("age_group")["total_acb_with_dph"]]
     k_stat, p_kw = kruskal(*groups)
     rows.append({"analysis": "B_kruskal_acb_vs_age_group", "statistic": k_stat, "p_value": p_kw})
@@ -248,11 +201,11 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
                 ax.text((xa + xb) / 2, pair_y * 1.015, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
                 pair_y *= 1.06
 
-    ax.set_title("Figure 3: ACB (with DPH) across age groups", color=PALETTE["blue"], fontweight="bold")
+    ax.set_title("Figure 2: ACB (with DPH) across age groups", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel("Age group")
     ax.set_ylabel("Total ACB (with DPH)")
     fig.tight_layout()
-    fig.savefig(FIG_DIR / "figure3_acb_agegroup_boxplot.png", dpi=220)
+    fig.savefig(FIG_DIR / "figure2_acb_agegroup_boxplot.png", dpi=220)
     plt.close(fig)
 
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
@@ -268,11 +221,11 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         line_kws={"color": PALETTE["orange"], "lw": 2.5},
         ax=ax,
     )
-    ax.set_title(f"Figure 4: Spearman ACB vs Severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
+    ax.set_title(f"Supplement: Spearman ACB vs Severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel("Total ACB (co-drugs only)")
     ax.set_ylabel("Max severity")
     fig.tight_layout()
-    fig.savefig(FIG_DIR / "figure4_spearman_acb_severity.png", dpi=220)
+    fig.savefig(FIG_DIR / "supplement_spearman_acb_severity.png", dpi=220)
     plt.close(fig)
 
     out = pd.DataFrame(rows)
@@ -280,11 +233,8 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def fit_logit(df: pd.DataFrame, include_pre_post: bool = True):
-    preds = ["total_acb_codrugs_only", "C(age_group)", "n_codrugs"]
-    if include_pre_post:
-        preds.append("pre_post_warning")
-    formula = "cardiac_any ~ " + " + ".join(preds)
+def fit_logit(df: pd.DataFrame):
+    formula = "cardiac_any ~ total_acb_codrugs_only + AGE + n_codrugs"
     model_obj = smf.logit(formula=formula, data=df)
     fit_method = "mle"
     try:
@@ -292,6 +242,8 @@ def fit_logit(df: pd.DataFrame, include_pre_post: bool = True):
         coef = model.params
         conf = model.conf_int()
         pvals = model.pvalues
+        pred_prob = model.predict(df)
+        auc = roc_auc_score(df["cardiac_any"], pred_prob)
         out = pd.DataFrame({
             "term": coef.index,
             "coef": coef.values,
@@ -306,13 +258,16 @@ def fit_logit(df: pd.DataFrame, include_pre_post: bool = True):
             "aic": float(model.aic),
             "bic": float(model.bic),
             "pseudo_r2_mcfadden": float(model.prsquared),
+            "auc": float(auc),
             "fit_method": fit_method,
         }
-        return model, out, fit_stats
+        return model, out, fit_stats, pd.DataFrame({"PRIMARYID": df["PRIMARYID"], "cardiac_any": df["cardiac_any"], "pred_prob": pred_prob})
     except Exception:
         fit_method = "regularized_l1"
         model = model_obj.fit_regularized(disp=False, alpha=0.1, maxiter=1000)
         coef = model.params
+        pred_prob = model.predict(df)
+        auc = roc_auc_score(df["cardiac_any"], pred_prob)
         out = pd.DataFrame({
             "term": coef.index,
             "coef": coef.values,
@@ -327,34 +282,21 @@ def fit_logit(df: pd.DataFrame, include_pre_post: bool = True):
             "aic": np.nan,
             "bic": np.nan,
             "pseudo_r2_mcfadden": np.nan,
+            "auc": float(auc),
             "fit_method": fit_method,
         }
-        return model, out, fit_stats
+        return model, out, fit_stats, pd.DataFrame({"PRIMARYID": df["PRIMARYID"], "cardiac_any": df["cardiac_any"], "pred_prob": pred_prob})
 
 
 def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     fit_rows = []
 
-    model_full, tbl_full, fit_full = fit_logit(df, include_pre_post=True)
+    model_full, tbl_full, fit_full, pred_df = fit_logit(df)
     tbl_full.to_csv(TAB_DIR / "table2_logit_full.csv", index=False)
+    pred_df.to_csv(TAB_DIR / "model_predictions_full.csv", index=False)
     fit_rows.append({"model": "full", **fit_full})
-
-    pre = df[df["pre_post_warning"] == 0].copy()
-    post = df[df["pre_post_warning"] == 1].copy()
-
-    if pre["cardiac_any"].nunique() > 1:
-        _, tbl_pre, fit_pre = fit_logit(pre, include_pre_post=False)
-        tbl_pre.to_csv(TAB_DIR / "table2_logit_pre.csv", index=False)
-        fit_rows.append({"model": "pre", **fit_pre})
-    else:
-        pd.DataFrame().to_csv(TAB_DIR / "table2_logit_pre.csv", index=False)
-
-    if post["cardiac_any"].nunique() > 1:
-        _, tbl_post, fit_post = fit_logit(post, include_pre_post=False)
-        tbl_post.to_csv(TAB_DIR / "table2_logit_post.csv", index=False)
-        fit_rows.append({"model": "post", **fit_post})
-    else:
-        pd.DataFrame().to_csv(TAB_DIR / "table2_logit_post.csv", index=False)
+    pd.DataFrame().to_csv(TAB_DIR / "table2_logit_pre.csv", index=False)
+    pd.DataFrame().to_csv(TAB_DIR / "table2_logit_post.csv", index=False)
 
     forest_df = tbl_full[~tbl_full["term"].eq("Intercept")].copy()
     forest_df = forest_df.sort_values("OR")
@@ -370,9 +312,25 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     ax.set_yticklabels(forest_df["term"])
     ax.set_xscale("log")
     ax.set_xlabel("Odds Ratio (log scale)")
-    ax.set_title("Figure 5: Logistic regression ORs (95% CI)", color=PALETTE["blue"], fontweight="bold")
+    ax.set_title("Figure 3: Multivariable logistic regression ORs", color=PALETTE["blue"], fontweight="bold")
     fig.subplots_adjust(left=0.34, right=0.98, top=0.90, bottom=0.12)
-    fig.savefig(FIG_DIR / "figure5_forest_logit_full.png", dpi=220)
+    fig.savefig(FIG_DIR / "figure3_forest_logit_full.png", dpi=220)
+    plt.close(fig)
+
+    roc_df = pred_df.dropna(subset=["pred_prob"]).copy()
+    fpr, tpr, _ = roc_curve(roc_df["cardiac_any"], roc_df["pred_prob"])
+    auc = fit_full["auc"]
+    fig, ax = plt.subplots(figsize=(6.8, 6.0))
+    ax.plot(fpr, tpr, color=PALETTE["teal"], lw=2.5, label=f"AUC = {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=PALETTE["slate"], ls="--", lw=1.2)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1.02)
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.set_title("Figure 4: ROC curve for cardiac risk model", color=PALETTE["blue"], fontweight="bold")
+    ax.legend(loc="lower right", frameon=True)
+    fig.tight_layout()
+    fig.savefig(FIG_DIR / "figure4_roc_cardiac_risk.png", dpi=220)
     plt.close(fig)
 
     pd.DataFrame(fit_rows).to_csv(TAB_DIR / "model_fit_stats.csv", index=False)
@@ -426,7 +384,7 @@ def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame
     lines.append("")
     lines.append("## Logistic model fit")
     for row in fit.itertuples(index=False):
-        lines.append(f"- {row.model}: n={row.n}, pseudo_r2={row.pseudo_r2_mcfadden:.4f}, AIC={row.aic:.2f}")
+        lines.append(f"- {row.model}: n={row.n}, pseudo_r2={row.pseudo_r2_mcfadden:.4f}, AIC={row.aic:.2f}, AUC={row.auc:.3f}")
 
     (OUT_DIR / "analysis_summary.md").write_text("\n".join(lines), encoding="utf-8")
 
@@ -437,11 +395,11 @@ def make_dashboard() -> None:
 
     files = [
         FIG_DIR / "figure1_flowchart.png",
-        FIG_DIR / "figure2_acb_cardiac_boxplot.png",
-        FIG_DIR / "figure4_spearman_acb_severity.png",
-        FIG_DIR / "figure5_forest_logit_full.png",
+        FIG_DIR / "figure2_acb_agegroup_boxplot.png",
+        FIG_DIR / "figure3_forest_logit_full.png",
+        FIG_DIR / "figure4_roc_cardiac_risk.png",
     ]
-    titles = ["Cohort Flow", "ACB vs Cardiac", "ACB vs Severity", "Adjusted Logistic ORs"]
+    titles = ["Cohort Flow", "ACB by Age Group", "Adjusted Logistic ORs", "Cardiac Risk ROC"]
 
     for i, (img_path, title) in enumerate(zip(files, titles)):
         ax = fig.add_subplot(gs[i // 2, i % 2])

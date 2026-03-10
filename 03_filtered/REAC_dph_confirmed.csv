@@ -8,12 +8,42 @@ PRIMARYID,CASEID,PT
 58700223,5870022,Overdose
 58700223,5870022,Sinus tachycardia
 58700223,5870022,Somnolence
+73251937,7325193,Binocular eye movement disorder
+73251937,7325193,Cerebral infarction
+73251937,7325193,Cerebral thrombosis
+73251937,7325193,Cerebrovascular accident
+73251937,7325193,Confusional state
+73251937,7325193,Convulsion
+73251937,7325193,Depression
+73251937,7325193,Dyskinesia
+73251937,7325193,Headache
+73251937,7325193,Hypoacusis
+73251937,7325193,Hypoaesthesia
+73251937,7325193,Intracranial aneurysm
+73251937,7325193,Muscular weakness
+73251937,7325193,Off label use
+73251937,7325193,Paraesthesia
+73251937,7325193,Transient ischaemic attack
+73251937,7325193,Tremor
+73251937,7325193,Visual impairment
+73251937,7325193,Vomiting
+74286754,7428675,Chest pain
+74286754,7428675,Flank pain
+74286754,7428675,Nausea
+74286754,7428675,Pleuritic pain
+74286754,7428675,Pulmonary embolism
+85322824,8532282,Non-alcoholic steatohepatitis
+87938453,8793845,Small intestinal obstruction
+87960215,8796021,Headache
+87960215,8796021,Migraine
 90032071,9003207,Drug abuse
 90032071,9003207,Intentional overdose
 90045271,9004527,Intentional overdose
 90045271,9004527,Toxicity to various agents
 90058601,9005860,Completed suicide
 90108611,9010861,Toxicity to various agents
+90108991,9010899,Intestinal obstruction
+90108991,9010899,Small intestinal obstruction
 90224201,9022420,Cardiac arrest
 90224201,9022420,Completed suicide
 90224201,9022420,Incorrect route of drug administration
@@ -27,6 +57,8 @@ PRIMARYID,CASEID,PT
 90274131,9027413,Cardio-respiratory arrest
 90274131,9027413,Completed suicide
 90274131,9027413,Death
+90575921,9057592,Overdose
+90575921,9057592,Suicide attempt
 90627191,9062719,Completed suicide
 90627191,9062719,Death
 90693641,9069364,Cardiac arrest
@@ -36,21 +68,125 @@ PRIMARYID,CASEID,PT
 90693731,9069373,Completed suicide
 90693901,9069390,Death
 90693901,9069390,Drug abuse
+90848041,9084804,Anxiety
+90848041,9084804,Injection site bruising
+90848041,9084804,Injection site pain
 90983191,9098319,Cardio-respiratory arrest
 90983191,9098319,Completed suicide
+91047791,9104779,Hypomagnesaemia
+91094602,9109460,Staphylococcal infection
+91127321,9112732,Completed suicide
+91127331,9112733,Completed suicide
 91139661,9113966,Drug abuse
 91139671,9113967,Drug abuse
+91159012,9115901,Abdominal pain
+91159012,9115901,Anaemia
+91159012,9115901,Drug ineffective for unapproved indication
+91159012,9115901,Endometriosis
+91159012,9115901,Off label use
+91159012,9115901,Thyroid disorder
+91161742,9116174,Anal inflammation
+91161742,9116174,Anaphylactoid reaction
+91161742,9116174,Fatigue
+91161742,9116174,Oesophagitis
+91161742,9116174,Stomatitis
+91222051,9122205,Chest pain
 91250571,9125057,Toxicity to various agents
+91501661,9150166,Gastrointestinal viral infection
+91534932,9153493,Crohn's disease
+91698201,9169820,Affective disorder
+91698201,9169820,Anxiety
+91698201,9169820,Blood prolactin increased
+91698201,9169820,Bradykinesia
+91698201,9169820,Coprolalia
+91698201,9169820,Decreased appetite
+91698201,9169820,Depression
+91698201,9169820,Drug interaction
+91698201,9169820,Dyskinesia
+91698201,9169820,Electrocardiogram QT prolonged
+91698201,9169820,Galactorrhoea
+91698201,9169820,Lethargy
+91698201,9169820,Loss of consciousness
+91698201,9169820,Musculoskeletal stiffness
+91698201,9169820,Somnambulism
+91698201,9169820,Somnolence
+91698201,9169820,Suicidal ideation
+91698201,9169820,Tic
+91698201,9169820,Toxicity to various agents
+91698201,9169820,Unresponsive to stimuli
+91698201,9169820,Weight increased
 91771491,9177149,Bundle branch block right
 91771491,9177149,Electrocardiogram QT prolonged
 91771491,9177149,Myocardial ischaemia
 91771491,9177149,Overdose
 91771491,9177149,Sinus tachycardia
 91771491,9177149,Somnolence
+91942281,9194228,Eye pain
+91942281,9194228,Head discomfort
+91942281,9194228,Headache
+91942281,9194228,Migraine
+78491026,7849102,Brain oedema
+78491026,7849102,Cerebral circulatory failure
+78491026,7849102,Cerebral haemorrhage
+78491026,7849102,Headache
+78491026,7849102,Muscular weakness
+78491026,7849102,Neurological decompensation
+78491026,7849102,Off label use
+78491026,7849102,Speech disorder
+78491026,7849102,Superior sagittal sinus thrombosis
+78491026,7849102,Toothache
+78491026,7849102,VIIth nerve paralysis
+79682086,7968208,Clostridium difficile infection
+79682086,7968208,Dehydration
+79682086,7968208,Hyponatraemia
+84838773,8483877,Bipolar disorder
+87960354,8796035,Anal fistula
+87960354,8796035,Anaphylactic reaction
+87960354,8796035,Myocardial stunning
+88590462,8859046,Deep vein thrombosis
+88590462,8859046,Injury
+88590462,8859046,Pain
+88590462,8859046,Pulmonary embolism
+89027432,8902743,Anxiety
+89027432,8902743,Deep vein thrombosis
+89027432,8902743,Emotional distress
+89027432,8902743,General physical health deterioration
+89027432,8902743,Injury
+89027432,8902743,Pain
+89027432,8902743,Pulmonary embolism
+90041313,9004131,Chest discomfort
+90041313,9004131,Hypersensitivity
+90041313,9004131,Infusion related reaction
+90041313,9004131,Off label use
+90583312,9058331,Anxiety
+90583312,9058331,Cerebrovascular accident
+90583312,9058331,Emotional distress
+90583312,9058331,General physical health deterioration
+90583312,9058331,Injury
+90583312,9058331,Intracranial venous sinus thrombosis
+90583312,9058331,Pain
+91080653,9108065,Hypersensitivity
+91094653,9109465,Anxiety
+91094653,9109465,Dyspnoea
+91094653,9109465,Infusion related reaction
+91094653,9109465,Pharyngeal oedema
+91094653,9109465,Swelling face
+91094653,9109465,Urticaria
+91094653,9109465,Weight increased
 92069771,9206977,Drug ineffective
 92256191,9225619,Encephalopathy
 92256191,9225619,Histiocytosis haematophagic
 92256191,9225619,Hypoxia
+92336283,9233628,Caecitis
+92336283,9233628,Fluid overload
+92336283,9233628,Hypertension
+92336283,9233628,Hypokalaemia
+92336283,9233628,Hypotension
+92336283,9233628,Hypoxia
+92336283,9233628,Presyncope
+92336283,9233628,Pulmonary oedema
+92336283,9233628,Rash maculo-papular
+92336283,9233628,Syncope
 92453852,9245385,Anticholinergic syndrome
 92453852,9245385,Asthenia
 92453852,9245385,Cough
@@ -66,19 +202,219 @@ PRIMARYID,CASEID,PT
 92453852,9245385,Respiratory distress
 92453852,9245385,Streptococcal sepsis
 92453852,9245385,Systemic inflammatory response syndrome
+92694391,9269439,Injection site erythema
+92694391,9269439,Injection site haematoma
+92694391,9269439,Injection site swelling
+92850362,9285036,Abdominal pain upper
+92850362,9285036,Burning sensation
+92850362,9285036,Chills
+92850362,9285036,Fatigue
+92850362,9285036,Influenza like illness
+92850362,9285036,Nausea
+92850362,9285036,Pyrexia
+93001541,9300154,Abdominal pain
+93001541,9300154,Asthenia
+93001541,9300154,Back pain
+93001541,9300154,Chest pain
+93001541,9300154,Feeling hot
+93001541,9300154,Flushing
+93001541,9300154,Hypersensitivity
+93001541,9300154,Infusion related reaction
+93001541,9300154,Vomiting
+93120711,9312071,Dyspnoea
+93120711,9312071,Pneumonia
+93120711,9312071,Pyrexia
+93147512,9314751,Chest pain
+93147512,9314751,Dyspnoea
+93147512,9314751,Erythema
+93147512,9314751,Feeling hot
+93147512,9314751,Throat tightness
+93621221,9362122,Convulsion
+93621221,9362122,Depression
+93621221,9362122,Folliculitis
+93621221,9362122,Lethargy
+93621221,9362122,Lymphadenopathy
+93621221,9362122,Pharyngitis
+93621221,9362122,Pruritus
+93621221,9362122,Rash erythematous
+93621221,9362122,Somnolence
+93621221,9362122,Suicidal behaviour
+736427826,7364278,Acute monocytic leukaemia
+736427826,7364278,Multi-organ failure
+736427826,7364278,Myeloid leukaemia
+736427826,7364278,Septic shock
+736427826,7364278,Transfusion reaction
+81703303,8170330,Anaphylactic reaction
+81703303,8170330,Infusion related reaction
+81703303,8170330,Vitiligo
+87079783,8707978,Abdominal pain
+87079783,8707978,Dizziness
+87079783,8707978,Nausea
+87079783,8707978,Pain
+87079783,8707978,Paraesthesia
+87079783,8707978,Serum sickness
+87124392,8712439,Dizziness
+87124392,8712439,Muscle spasms
+87124392,8712439,Pain
+87124392,8712439,Paraesthesia
+87156553,8715655,Blood creatine phosphokinase increased
+87156553,8715655,Muscle spasms
+87156553,8715655,Musculoskeletal chest pain
+87156553,8715655,Myalgia
+87156553,8715655,Pain in extremity
+87156553,8715655,Paraesthesia
+88036702,8803670,Drug ineffective
+88036702,8803670,Infusion related reaction
+88036702,8803670,Palpitations
+88036702,8803670,Pericarditis
+88529672,8852967,Mania
+89198723,8919872,Anxiety
+89198723,8919872,Deep vein thrombosis
+89198723,8919872,Emotional distress
+89198723,8919872,General physical health deterioration
+89198723,8919872,Injury
+89198723,8919872,Pain
+90631298,9063129,Brain oedema
+90631298,9063129,Coagulopathy
+90631298,9063129,Pneumonia
+90631298,9063129,Respiratory failure
+90631298,9063129,Sepsis
+93165954,9316595,Irritable bowel syndrome
+93512252,9351225,Anhedonia
+93512252,9351225,Anxiety
+93512252,9351225,Deep vein thrombosis
+93512252,9351225,Emotional distress
+93512252,9351225,Injury
+93512252,9351225,Intracranial venous sinus thrombosis
+93512252,9351225,Jugular vein thrombosis
+93512252,9351225,Pain
+93512252,9351225,Psychological trauma
+93613092,9361309,Fall
+93613092,9361309,Head injury
+93613092,9361309,Otitis externa
+93613092,9361309,Quadriplegia
+93613092,9361309,Urinary tract infection
 93753692,9375369,Convulsion
 93753692,9375369,Frequent bowel movements
+93875011,9387501,Lupus-like syndrome
+93928602,9392860,Dizziness
+93928602,9392860,Head discomfort
+93928602,9392860,Musculoskeletal pain
+93928602,9392860,Pain in extremity
+93928602,9392860,Paraesthesia
+93928602,9392860,Serum sickness
+93948222,9394822,Asthenia
+93948222,9394822,Convulsion
+93948222,9394822,Dizziness
+93948222,9394822,Headache
+93948222,9394822,Hypoaesthesia
+93948222,9394822,Nausea
+93948222,9394822,Superior sagittal sinus thrombosis
+93948222,9394822,Vision blurred
+93948222,9394822,Vomiting
 93980041,9398004,Completed suicide
 93980041,9398004,Intentional overdose
 93980041,9398004,Toxicity to various agents
+94084231,9408423,Arthralgia
+94084231,9408423,Butterfly rash
+94084231,9408423,Eye discharge
+94084231,9408423,Eye pain
+94084231,9408423,Eye swelling
+94084231,9408423,Fatigue
+94084231,9408423,Headache
+94084231,9408423,Migraine
+94084231,9408423,Ocular hyperaemia
+94084231,9408423,Pyrexia
+94084231,9408423,Systemic lupus erythematosus
+94189892,9418989,Hand deformity
+94189892,9418989,Pain
+94198375,9419837,Headache
+94198375,9419837,Muscle spasms
+94198375,9419837,Pain
+94198375,9419837,Paraesthesia
+94198375,9419837,Tetany
+94428771,9442877,Hyperglycaemia
 94548401,9454840,Disorientation
 94548401,9454840,Euphoric mood
 94548401,9454840,Overdose
+94618091,9461809,Infusion related reaction
+94618091,9461809,Pruritus
+94618091,9461809,Rash
+94618091,9461809,Serum sickness
+94618091,9461809,Swelling
 94721651,9472165,Overdose
 94721651,9472165,Somnolence
 95022251,9502225,Dehydration
 95022251,9502225,Pneumonia
 95022251,9502225,Pulmonary mycosis
+95310961,9531096,Intracranial venous sinus thrombosis
+81057034,8105703,Cholecystitis chronic
+81057034,8105703,Gallbladder injury
+81060453,8106045,Anxiety
+81060453,8106045,Cholecystitis
+81060453,8106045,Gallbladder injury
+81060453,8106045,Injury
+86468653,8646865,Abdominal pain
+86468653,8646865,Cholecystitis acute
+86468653,8646865,Cholelithiasis
+86468653,8646865,Injury
+86468653,8646865,Pain
+87796365,8779636,Colitis ulcerative
+87796365,8779636,Dehydration
+87796365,8779636,Hyperkalaemia
+87796365,8779636,Postoperative ileus
+87796365,8779636,Septic shock
+87796365,8779636,Small intestinal obstruction
+94859874,9485987,Inflammatory bowel disease
+94957702,9495770,Dyspnoea
+94957702,9495770,Hypersensitivity
+94957702,9495770,Incorrect dose administered
+94957702,9495770,Off label use
+94957702,9495770,Pharyngeal oedema
+94957702,9495770,Vomiting
+95714722,9571472,Crohn's disease
+95714722,9571472,Liver abscess
+95860702,9586070,Crohn's disease
+95863602,9586360,Crohn's disease
+95931851,9593185,Alanine aminotransferase increased
+95931851,9593185,Aspartate aminotransferase increased
+95931851,9593185,Blood calcium decreased
+95931851,9593185,Blood magnesium decreased
+95931851,9593185,Blood phosphorus decreased
+95931851,9593185,Blood sodium decreased
+95931851,9593185,C-reactive protein increased
+95931851,9593185,Chills
+95931851,9593185,Disease recurrence
+95931851,9593185,Drug reaction with eosinophilia and systemic symptoms
+95931851,9593185,Eosinophil count increased
+95931851,9593185,Erythema
+95931851,9593185,Face oedema
+95931851,9593185,Fatigue
+95931851,9593185,Headache
+95931851,9593185,Hepatitis acute
+95931851,9593185,Hepatomegaly
+95931851,9593185,Human herpes virus 6 serology positive
+95931851,9593185,Hyperhidrosis
+95931851,9593185,Inflammatory bowel disease
+95931851,9593185,Jaundice
+95931851,9593185,Lethargy
+95931851,9593185,Liver disorder
+95931851,9593185,Lymphadenopathy
+95931851,9593185,Macule
+95931851,9593185,Myalgia
+95931851,9593185,Nausea
+95931851,9593185,Neutrophil toxic granulation present
+95931851,9593185,Papule
+95931851,9593185,Periorbital oedema
+95931851,9593185,Platelet count decreased
+95931851,9593185,Pulse pressure increased
+95931851,9593185,Purpura
+95931851,9593185,Pyrexia
+95931851,9593185,Rash
+95931851,9593185,Skin plaque
+95931851,9593185,Tachycardia
+95931851,9593185,Vomiting
+95931851,9593185,White blood cell count increased
 96082232,9608223,Adrenal insufficiency
 96082232,9608223,Blood bilirubin increased
 96082232,9608223,Hypokalaemia
@@ -94,20 +430,72 @@ PRIMARYID,CASEID,PT
 96083142,9608314,Mental status changes
 96083142,9608314,Skin exfoliation
 96083142,9608314,Vasodilatation
+96262933,9626293,Intestinal obstruction
 96265191,9626519,Anticholinergic syndrome
 96265191,9626519,Drug-induced liver injury
 96265191,9626519,Hepatic encephalopathy
 96265191,9626519,Hyperammonaemia
 96265191,9626519,Overdose
 96265191,9626519,Toxicity to various agents
+96267473,9626747,Incisional hernia
+96413661,9641366,Abdominal pain
+96413661,9641366,Dizziness
+96447411,9644741,Drug screen positive
+96491382,9649138,Urticaria
+96596892,9659689,Gastroenteritis
+96651413,9665141,Migraine
+96651413,9665141,Sinusitis
+96707603,9670760,Abdominal pain
+96707603,9670760,Anal fistula
+96707603,9670760,Blood pressure increased
+96707603,9670760,C-reactive protein increased
+96707603,9670760,Chest pain
+96707603,9670760,Diarrhoea
+96707603,9670760,Dyspnoea
+96707603,9670760,Enteritis
+96707603,9670760,Erythema
+96707603,9670760,Flushing
+96707603,9670760,Gastrooesophageal reflux disease
+96707603,9670760,Haemorrhoids
+96707603,9670760,Hyperhidrosis
+96707603,9670760,Infusion related reaction
+96707603,9670760,Malaise
+96707603,9670760,Nausea
+96707603,9670760,Pilonidal cyst
+96707603,9670760,Tachycardia
+96853142,9685314,Crohn's disease
+96907412,9690741,Infusion related reaction
 97228301,9722830,Blood creatine phosphokinase increased
 97228301,9722830,Hypertension
 97228301,9722830,Pyrexia
 97228301,9722830,Tachycardia
+100285591,10028559,Somnolence
+100285591,10028559,Wrong drug administered
+100326691,10032669,Psoriasis
+100326691,10032669,Therapeutic response unexpected
+100355111,10035511,Drug ineffective
+100479321,10047932,Headache
+91936148,9193614,Coagulopathy
+91936148,9193614,Hepatic failure
+91936148,9193614,Liver injury
+91936148,9193614,Mental status changes
+91936148,9193614,Overdose
+91936148,9193614,Toxicity to various agents
+91936148,9193614,Urine output decreased
 96596494,9659649,Mental status changes
+96659833,9665983,Headache
+96659833,9665983,Sinusitis
+97529862,9752986,Meningitis aseptic
+97864183,9786418,Septic shock
+97926351,9792635,Abdominal pain
+97926351,9792635,Dizziness
+97926351,9792635,Nausea
+97926351,9792635,Vomiting
+97949141,9794914,Hypersensitivity
 97958641,9795864,Drug abuse
 98000661,9800066,Drug abuse
 98019431,9801943,Drug abuse
+98043603,9804360,Type IV hypersensitivity reaction
 98059501,9805950,Toxicity to various agents
 98073191,9807319,Drug abuse
 98073251,9807325,Drug abuse
@@ -129,6 +517,7 @@ PRIMARYID,CASEID,PT
 98341351,9834135,Drug abuse
 98357641,9835764,Death
 98432881,9843288,Death
+98447802,9844780,Postoperative ileus
 98517291,9851729,Death
 98517291,9851729,Drug abuse
 98542691,9854269,Death
@@ -139,17 +528,41 @@ PRIMARYID,CASEID,PT
 98589201,9858920,Completed suicide
 98589661,9858966,Intentional drug misuse
 98590691,9859069,Intentional drug misuse
+98618872,9861887,Brain neoplasm
+98618872,9861887,Cancer in remission
+98618872,9861887,Migraine
+98618872,9861887,Vomiting
 98625701,9862570,Intentional drug misuse
 98631021,9863102,Intentional drug misuse
+98687111,9868711,Condition aggravated
+98687111,9868711,Hypersensitivity
 98778031,9877803,Nasal cyst
 98778031,9877803,Urticaria
+98809033,9880903,Dehydration
+98809033,9880903,Drug dose omission
+98809033,9880903,Headache
+98809033,9880903,Nausea
+98809033,9880903,Oral infection
+98809033,9880903,Pharyngitis
+98809033,9880903,Swelling
+98809033,9880903,Tooth abscess
+98809033,9880903,Tooth infection
+98809033,9880903,Vomiting
 99147531,9914753,Death
 99147531,9914753,Drug abuse
+99334552,9933455,Chapped lips
+99334552,9933455,Dry eye
 99404141,9940414,Death
 99404151,9940415,Death
 99404151,9940415,Drug abuse
 99404181,9940418,Death
 99404181,9940418,Drug abuse
+99508542,9950854,Crohn's disease
+99508542,9950854,Hypersensitivity
+99508542,9950854,Rash generalised
+99508542,9950854,Rash papular
+99508542,9950854,Rash pruritic
+99508542,9950854,Serum sickness
 99552122,9955212,Clonus
 99552122,9955212,Convulsion
 99552122,9955212,Drug withdrawal syndrome
@@ -168,11 +581,23 @@ PRIMARYID,CASEID,PT
 99642611,9964261,Completed suicide
 99642611,9964261,Death
 99670591,9967059,Drug abuse
+99707511,9970751,Device malfunction
+99707511,9970751,Pain
 99758661,9975866,Drug abuse
 99782011,9978201,Death
 99782011,9978201,Drug abuse
 99782241,9978224,Death
 99782241,9978224,Drug abuse
+99892811,9989281,Anaphylactic reaction
+99892811,9989281,Drug hypersensitivity
+99892811,9989281,Streptococcal infection
+99919711,9991971,Deep vein thrombosis
+99919711,9991971,Pulmonary embolism
+100387842,10038784,Convulsion
+100387842,10038784,Drug ineffective
+100406222,10040622,Diarrhoea
+100406222,10040622,Rash
+100406222,10040622,Rehabilitation therapy
 100419272,10041927,Abdominal pain
 100419272,10041927,Intentional self-injury
 100419272,10041927,Overdose
@@ -181,24 +606,68 @@ PRIMARYID,CASEID,PT
 100446712,10044671,Intentional self-injury
 100446712,10044671,Overdose
 100446712,10044671,Vomiting
+100497632,10049763,Headache
+100497632,10049763,Muscle atrophy
+100497632,10049763,Muscle spasms
+100497632,10049763,Myopathy
+100497632,10049763,Myositis
+100497632,10049763,Pain
+100497632,10049763,Paraesthesia
+100497632,10049763,Tetany
+100498122,10049812,Abdominal pain
+100498122,10049812,Dizziness
+100498122,10049812,Muscle spasms
+100498122,10049812,Myalgia
+100498122,10049812,Nausea
+100498122,10049812,Pain
+100498122,10049812,Paraesthesia
+100498412,10049841,Blood creatine phosphokinase increased
+100498412,10049841,Muscle spasms
+100498412,10049841,Musculoskeletal chest pain
+100498412,10049841,Myalgia
+100498412,10049841,Pain in extremity
+100498412,10049841,Paraesthesia
 100512771,10051277,Dehydration
 100512771,10051277,Diarrhoea
 100512771,10051277,Hypoxia
 100512771,10051277,Nausea
 100526501,10052650,Dehydration
 100526501,10052650,Hypoxia
+100547662,10054766,Off label use
+100547662,10054766,Vocal cord paralysis
+100568302,10056830,Suicidal ideation
+100604592,10060459,Device related infection
+100624324,10062432,Aggression
+100624324,10062432,Irritability
+100624324,10062432,Mood altered
+100624324,10062432,Personality change
+100624324,10062432,Psychiatric symptom
+100624324,10062432,Swelling face
 100637902,10063790,Decreased appetite
 100637902,10063790,Dehydration
 100637902,10063790,Diarrhoea
 100637902,10063790,Faecal incontinence
 100637902,10063790,Hypoxia
 100637902,10063790,Nausea
+100696412,10069641,Urticaria
+100784131,10078413,Tongue disorder
+100821731,10082173,Drug interaction
+100821731,10082173,Eye pain
+100821731,10082173,Headache
 100930531,10093053,Feeling abnormal
 100930531,10093053,Head discomfort
 100930531,10093053,Psychomotor hyperactivity
 100930531,10093053,Sinus congestion
 100930551,10093055,Extra dose administered
 100930551,10093055,Wrong drug administered
+101286623,10128662,Cellulitis
+101286623,10128662,Crohn's disease
+101296712,10129671,Upper limb fracture
+101341571,10134157,Drug administration error
+101341571,10134157,Extra dose administered
+101341571,10134157,Headache
+101434362,10143436,H1N1 influenza
+101434362,10143436,Nasopharyngitis
 101562231,10156223,Abdominal pain
 101562231,10156223,Bezoar
 101562231,10156223,Body temperature increased
@@ -210,6 +679,10 @@ PRIMARYID,CASEID,PT
 101562231,10156223,Overdose
 101562231,10156223,Sinus tachycardia
 101562231,10156223,Toxicity to various agents
+101666931,10166693,Death
+101688061,10168806,Dyspnoea
+101688061,10168806,Hypertension
+101688061,10168806,Tremor
 101705981,10170598,Electrocardiogram QT prolonged
 101705981,10170598,Left ventricular dysfunction
 101947511,10194751,Agitation
@@ -311,8 +784,49 @@ PRIMARYID,CASEID,PT
 102027092,10202709,Intentional overdose
 102027092,10202709,Rhabdomyolysis
 102027092,10202709,Serotonin syndrome
+102183961,10218396,Clostridium difficile infection
+102438682,10243868,Crohn's disease
+102493301,10249330,Intentional overdose
+102493301,10249330,Malaise
+102493301,10249330,Mydriasis
+102493301,10249330,Nausea
+102493301,10249330,Vomiting
+102627781,10262778,Haematocrit increased
+102627781,10262778,Haemoglobin increased
+88295943,8829594,Abdominal pain upper
+88295943,8829594,Anhedonia
+88295943,8829594,Anxiety
+88295943,8829594,Cholecystectomy
+88295943,8829594,Cholecystitis chronic
+88295943,8829594,Emotional distress
+88295943,8829594,General physical health deterioration
+88295943,8829594,Hypertension
+88295943,8829594,Injury
+88295943,8829594,Malaise
+88295943,8829594,Mental disorder
+88295943,8829594,Pain
+88295943,8829594,Pyrexia
+94099407,9409940,Abdominal abscess
+94099407,9409940,Crohn's disease
+94099407,9409940,Fistula
+94099407,9409940,Ileectomy
+94099407,9409940,Ileostomy
+95930914,9593091,Abdominal pain
+95930914,9593091,Dizziness
+95930914,9593091,Nausea
+95930914,9593091,Pain
+95930914,9593091,Paraesthesia
+95930914,9593091,Serum sickness
+97204596,9720459,Anal abscess
+97204596,9720459,Inflammatory bowel disease
 97932444,9793244,Dehydration
 97932444,9793244,Hypoxia
+98194374,9819437,Febrile neutropenia
+98194374,9819437,Hypophosphataemia
+98194374,9819437,Peripheral motor neuropathy
+98194374,9819437,Platelet count decreased
+98194374,9819437,Sepsis
+98819856,9881985,Hypokalaemia
 99261732,9926173,Anaphylactic reaction
 99261732,9926173,Asthma
 99261732,9926173,Throat tightness
