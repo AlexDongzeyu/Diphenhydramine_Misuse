@@ -1,0 +1,4 @@
+analysis,statistic,p_value
+A_mann_whitney_acb_vs_cardiac,1097.5,0.990635763751576
+B_kruskal_acb_vs_age_group,8.034084795777133,0.018006141264957722
+C_spearman_acb_vs_severity,0.1373440282389881,0.04630100004383189

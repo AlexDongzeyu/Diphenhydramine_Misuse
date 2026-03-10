@@ -1,61 +1,44 @@
-# Anticholinergic Burden-Based Analysis of Cardiac Toxicity in Adolescent Diphenhydramine Overdose Using FAERS
+# Adolescent Diphenhydramine Misuse and Cardiac Toxicity in FAERS
 
-Youreka Research Project (2026)
+This repository contains the full data pipeline, cleaned study cohort, and analysis outputs for an adolescent diphenhydramine FAERS project.
 
-## Project status
-- Pipeline is operational and currently completes through final output using `run_faers_pipeline_compact.py`.
-- Core outputs are present:
-  - `03_filtered/DEMO_teens.csv`
-  - `03_filtered/DRUG_teens.csv`
-  - `03_filtered/REAC_teens.csv`
-  - `03_filtered/OUTC_teens.csv`
-  - `03_filtered/DRUG_dph_confirmed.csv`
-  - `04_processed/DRUG_normalized.csv`
-  - `04_processed/ACB_per_case.csv`
-  - `05_final/analysis_table.csv`
-- Current confirmed adolescent DPH cohort size: **86 unique PRIMARYID**.
-- Quarter-mismatch/data-loss issue in teen-linked tables was repaired by rebuilding from **Phase 6** and validating ID-subset consistency.
+## Current submission snapshot
+- Active teen DEMO cohort: 217,507 unique PRIMARYIDs in `03_filtered/teen_demo_records.csv`
+- Confirmed diphenhydramine cohort: 211 unique PRIMARYIDs in `03_filtered/dph_confirmed_ids.txt`
+- Final analysis table: `05_final/cohort_analysis.csv`
+- Main pipeline script: `build_faers_cohort.py`
+- Main analysis script: `06_analysis/build_analysis_outputs.py`
 
-## What has been done (Alex branch)
-- Added an advanced analysis workflow and outputs under `06_analysis/`.
-- Implemented reproducible scripts:
-   - `06_analysis/run_advanced_analysis.py` (executed in this workspace)
-   - `06_analysis/run_advanced_analysis.R` (template for R environment)
-- Generated statistical result tables:
-   - `06_analysis/tables/table1_descriptive.csv`
-   - `06_analysis/tables/normality_shapiro.csv`
-   - `06_analysis/tables/nonparametric_tests.csv`
-   - `06_analysis/tables/posthoc_dunn_age_group.csv`
-   - `06_analysis/tables/table2_logit_full.csv`
-   - `06_analysis/tables/table2_logit_pre.csv`
-   - `06_analysis/tables/table2_logit_post.csv`
-   - `06_analysis/tables/model_fit_stats.csv`
-- Generated polished figures for poster/manuscript use:
-   - `06_analysis/figures/figure1_flowchart.png`
-   - `06_analysis/figures/figure2_acb_cardiac_boxplot.png`
-   - `06_analysis/figures/figure3_acb_agegroup_boxplot.png`
-   - `06_analysis/figures/figure4_spearman_acb_severity.png`
-   - `06_analysis/figures/figure5_forest_logit_full.png`
-   - `06_analysis/figures/figure6_dashboard_overview.png`
-- Added readability improvements to reduce overlap and clipping (axis headroom, spacing, margins, layout controls).
-- Added run metadata and summary:
-   - `06_analysis/run_metadata.json`
-   - `06_analysis/analysis_summary.md`
+## Folder map
+- `01_raw/`: local copies of raw lookup files used by the pipeline
+- `02_combined/`: reserved for optional full-table archival combines
+- `03_filtered/`: filtered teen-level and DPH-confirmed FAERS records
+- `04_processed/`: normalized drug names and case-level ACB summaries
+- `05_final/`: final analysis-ready cohort table
+- `06_analysis/`: statistical scripts, tables, figures, and analysis summaries
+- `data/`: downloaded FAERS source files and lookup inputs
+- `RxNorm/`: RxNorm source release used for generic-name normalization
 
-## Current workspace notes
-- This workspace uses:
-  - FAERS extracted source at `data/faers_extracted/`
-  - RxNorm source at `RxNorm/RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF`
-  - ACB lookup at `01_raw/acb/acb_scores.csv`
-- `run_faers_pipeline_compact.py` is the **main script** for ongoing runs and recovery.
-- `run_faers_pipeline.py` is retained as a legacy/non-compact variant.
+## Main scripts
+- `build_faers_cohort.py`: canonical end-to-end pipeline from raw FAERS tables to the final cohort table
+- `build_faers_cohort_legacy.py`: older reference pipeline kept for comparison only
+- `download_faers_data.py`: downloads and extracts quarterly FAERS ASCII files
+- `repair_teen_demo.py`: targeted DEMO audit and repair utility used to restore the teen DEMO file
+- `add_cardiac_acb_flags.py`: standalone helper for joining cardiac outcomes and ACB scores onto a cohort
+- `06_analysis/build_analysis_outputs.py`: generates analysis tables, figures, metadata, and the written results summary
+- `06_analysis/build_analysis_outputs.R`: R template that mirrors the analysis workflow
 
-## What still needs to be done
-1. **Finalize structure harmonization** (optional but recommended)
-   - Align raw folder layout to one standard (`01_raw/...` vs current mixed `data/...` + `RxNorm/...`) for long-term reproducibility.
-2. **Regenerate `02_combined/*_all.csv` if strict archival completeness is required**
-   - These files are very large and currently not the active dependency for compact runs.
-3. **Finalize inferential reporting for manuscript/presentation**
-   - Select primary model specification and finalize interpretation text for ORs/CIs and subgroup findings.
-4. **Prepare research deliverables**
-   - Methods write-up, variable definitions, cohort flow diagram, and results tables/figures.
+## Recommended run order
+1. Download or update FAERS source files with `download_faers_data.py` if source data are missing.
+2. Build the filtered cohort and final analysis table with `build_faers_cohort.py`.
+3. Generate the manuscript tables and figures with `06_analysis/build_analysis_outputs.py`.
+
+## Key outputs
+- `03_filtered/teen_demo_records.csv`: canonical adolescent DEMO cohort after dedupe and country/age filtering
+- `03_filtered/dph_confirmed_ids.txt`: confirmed diphenhydramine case IDs
+- `04_processed/acb_by_case.csv`: case-level ACB totals and co-drug counts
+- `05_final/cohort_analysis.csv`: final analysis-ready dataset used by the statistical scripts
+- `06_analysis/results_summary.md`: concise analysis summary for the current run
+- `06_analysis/results_metadata.json`: run metadata for the current analysis build
+
+Each numbered folder also contains a short `README.md` describing the files in that layer and how they connect to the next step.
