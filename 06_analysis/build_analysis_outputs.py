@@ -165,6 +165,18 @@ def add_title_block(ax, title: str, subtitle: str = "") -> None:
         )
 
 
+def concise_distribution_subtitle(series: pd.Series, stat: float, p: float) -> str:
+    return " | ".join(
+        [
+            f"n = {len(series):,}",
+            f"mean = {series.mean():.2f}",
+            f"median = {series.median():.2f}",
+            f"W = {stat:.3f}" if pd.notna(stat) else "W = NA",
+            format_p_value(p),
+        ]
+    )
+
+
 def add_badge(
     ax,
     text: str,
@@ -315,35 +327,21 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
         )
         ax.axvline(s.mean(), color=PALETTE["navy"], linewidth=2.2, linestyle="-", label="Mean")
         ax.axvline(s.median(), color=PALETTE["orange"], linewidth=2.2, linestyle="--", label="Median")
-        add_title_block(ax, f"Distribution of {pretty_label(col)}", "Histogram with kernel density estimate and central tendency markers")
+        add_title_block(ax, f"Distribution of {pretty_label(col)}", concise_distribution_subtitle(s, stat, p))
         style_axes(ax, grid_axis="y")
         ax.set_xlabel(pretty_label(col))
         ax.set_ylabel("Case count")
-        ax.legend(loc="upper left")
-        add_badge(
-            ax,
-            "\n".join(
-                [
-                    f"n = {len(s):,}",
-                    f"mean = {s.mean():.2f}",
-                    f"median = {s.median():.2f}",
-                    f"Shapiro W = {stat:.3f}" if pd.notna(stat) else "Shapiro W = NA",
-                    format_p_value(p),
-                ]
-            ),
-            facecolor="#fbfdff",
-        )
+        ax.legend(loc="upper right")
         save_figure(fig, FIG_DIR / HISTOGRAM_NAMES[col])
 
         fig, ax = plt.subplots(figsize=(6.6, 6.2), facecolor=PALETTE["bg"])
         (theoretical, ordered), (slope, intercept, r_value) = stats.probplot(s, dist="norm")
         ax.scatter(theoretical, ordered, s=38, color=color, alpha=0.85, edgecolors="white", linewidths=0.55)
         ax.plot(theoretical, slope * np.asarray(theoretical) + intercept, color=PALETTE["navy"], linewidth=2.2)
-        add_title_block(ax, f"Q-Q Plot for {pretty_label(col)}", "Departure from the reference line indicates non-normality")
+        add_title_block(ax, f"Q-Q Plot for {pretty_label(col)}", f"Reference-line correlation = {r_value:.3f} | {format_p_value(p)}")
         style_axes(ax, grid_axis="both")
         ax.set_xlabel("Theoretical quantiles")
         ax.set_ylabel("Observed quantiles")
-        add_badge(ax, f"Correlation = {r_value:.3f}\n{format_p_value(p)}", facecolor="#fbfdff")
         save_figure(fig, FIG_DIR / QQ_NAMES[col])
 
     out = pd.DataFrame(rows)
@@ -398,21 +396,10 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         medianprops={"color": PALETTE["red"], "linewidth": 2.0},
         ax=ax,
     )
-    sns.stripplot(
-        data=plot_df,
-        x="age_group",
-        y="total_acb_with_dph",
-        order=order,
-        color=PALETTE["ink"],
-        alpha=0.26,
-        size=3.4,
-        jitter=0.2,
-        ax=ax,
-    )
     ymax = np.nanmax(plot_df["total_acb_with_dph"]) if plot_df["total_acb_with_dph"].notna().any() else 1
     ymin = np.nanmin(plot_df["total_acb_with_dph"]) if plot_df["total_acb_with_dph"].notna().any() else 0
     lower = min(0, ymin - max(0.25, 0.05 * max(ymax, 1)))
-    ax.set_ylim(lower, ymax * 1.34 if ymax > 0 else 1.5)
+    ax.set_ylim(lower, ymax * 1.24 if ymax > 0 else 1.5)
 
     summary = plot_df.groupby("age_group")["total_acb_with_dph"].agg(["median", "count"]).reindex(order)
     for idx, row in enumerate(summary.itertuples()):
@@ -420,21 +407,20 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         ax.text(idx, lower + 0.02 * (ax.get_ylim()[1] - lower), f"n = {int(row.count)}", ha="center", va="bottom", fontsize=10, color=PALETTE["slate"])
 
     level_map = {lvl: idx for idx, lvl in enumerate(order)}
-    pair_y = ymax * 1.10 if ymax > 0 else 1
+    pair_y = ymax * 1.06 if ymax > 0 else 1
     for i, a in enumerate(order):
         for b in order[i + 1 :]:
             pval = dunn_df.loc[a, b] if a in dunn_df.index and b in dunn_df.columns else np.nan
             if pd.notna(pval) and pval < 0.05:
                 xa, xb = level_map[a], level_map[b]
                 ax.plot([xa, xa, xb, xb], [pair_y, pair_y * 1.015, pair_y * 1.015, pair_y], color=PALETTE["slate"], lw=1.3)
-                ax.text((xa + xb) / 2, pair_y * 1.02, f"{p_stars(float(pval))} ({format_p_value(float(pval))})", ha="center", va="bottom", color=PALETTE["red"], fontsize=10.2)
+                ax.text((xa + xb) / 2, pair_y * 1.018, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
                 pair_y *= 1.06
 
-    add_title_block(ax, "Total ACB Burden Across Age Groups", f"Kruskal-Wallis: H = {k_stat:.2f}, {format_p_value(p_kw)}")
+    add_title_block(ax, "Total ACB Burden Across Age Groups", f"Kruskal-Wallis H = {k_stat:.2f} | {format_p_value(p_kw)} | Violin shows density; box shows median and IQR")
     style_axes(ax, grid_axis="y")
     ax.set_xlabel("Age group")
     ax.set_ylabel("Total ACB (with DPH)")
-    add_badge(ax, "Violin = density\nBox = median and IQR\nRed point = group median", x=0.02, ha="left", facecolor="#fbfdff")
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_age_group"])
 
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
@@ -443,18 +429,15 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     fig, ax = plt.subplots(figsize=(8.4, 6.1), facecolor=PALETTE["bg"])
     severity_df = df[["total_acb_codrugs_only", "max_severity", "cardiac_any"]].dropna().copy()
     severity_df["severity_jittered"] = severity_df["max_severity"] + RNG.normal(0, 0.05, size=len(severity_df))
-    for cardiac_value, label in CARDIAC_LABELS.items():
-        subset = severity_df[severity_df["cardiac_any"] == cardiac_value]
-        ax.scatter(
-            subset["total_acb_codrugs_only"],
-            subset["severity_jittered"],
-            s=34,
-            alpha=0.45,
-            color=CARDIAC_COLORS[cardiac_value],
-            edgecolors="white",
-            linewidths=0.45,
-            label=label,
-        )
+    ax.scatter(
+        severity_df["total_acb_codrugs_only"],
+        severity_df["severity_jittered"],
+        s=30,
+        alpha=0.34,
+        color=PALETTE["teal"],
+        edgecolors="white",
+        linewidths=0.4,
+    )
     sns.regplot(
         data=severity_df,
         x="total_acb_codrugs_only",
@@ -464,23 +447,11 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         line_kws={"color": PALETTE["navy"], "lw": 2.8},
         ax=ax,
     )
-    add_title_block(ax, "ACB Burden Versus Maximum Case Severity", f"Spearman correlation: rho = {rho:.2f}, {format_p_value(p_sp)}")
+    add_title_block(ax, "ACB Burden Versus Maximum Case Severity", f"Spearman rho = {rho:.2f} | {format_p_value(p_sp)} | Points are lightly jittered vertically to reduce overlap")
     style_axes(ax, grid_axis="both")
     ax.set_xlabel("Total ACB (co-drugs only)")
     ax.set_ylabel("Max severity")
     ax.set_yticks(sorted(severity_df["max_severity"].dropna().unique()))
-    ax.legend(loc="upper left", title="Outcome subgroup")
-    add_badge(
-        ax,
-        "\n".join(
-            [
-                f"n = {len(severity_df):,}",
-                f"Median ACB = {severity_df['total_acb_codrugs_only'].median():.2f}",
-                f"Median severity = {severity_df['max_severity'].median():.2f}",
-            ]
-        ),
-        facecolor="#fbfdff",
-    )
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_severity"])
 
     out = pd.DataFrame(rows)
@@ -587,7 +558,6 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     text_x = ax.get_xlim()[1] / 1.02
     for yi, value in enumerate(value_text):
         ax.text(text_x, yi, value, ha="right", va="center", fontsize=10, color=PALETTE["ink"])
-    add_badge(ax, "Teal = p < 0.05\nDashed line = null effect", x=0.02, ha="left", facecolor="#fbfdff")
     fig.subplots_adjust(left=0.29, right=0.97, top=0.88, bottom=0.13)
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"])
 
@@ -605,19 +575,8 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     style_axes(ax, grid_axis="both")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    add_title_block(ax, "ROC Curve for the Cardiac Risk Model", "Receiver operating characteristic with highlighted best tradeoff point")
+    add_title_block(ax, "ROC Curve for the Cardiac Risk Model", f"AUC = {auc:.3f} | Best sensitivity = {tpr[youden_idx]:.2f} | Best specificity = {1 - fpr[youden_idx]:.2f}")
     ax.legend(loc="lower right")
-    add_badge(
-        ax,
-        "\n".join(
-            [
-                f"Best sensitivity = {tpr[youden_idx]:.2f}",
-                f"Best specificity = {1 - fpr[youden_idx]:.2f}",
-                f"AUC = {auc:.3f}",
-            ]
-        ),
-        facecolor="#fbfdff",
-    )
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"])
 
     pd.DataFrame(fit_rows).to_csv(TAB_DIR / FILE_NAMES["table_fit"], index=False)
