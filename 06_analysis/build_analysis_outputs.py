@@ -1,6 +1,5 @@
 from pathlib import Path
 import json
-import textwrap
 
 import numpy as np
 import pandas as pd
@@ -8,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import ticker
 from matplotlib.patches import FancyBboxPatch
+from matplotlib import patheffects
 from scipy import stats
 from scipy.stats import shapiro, mannwhitneyu, kruskal, spearmanr
 import scikit_posthocs as sp
@@ -97,6 +97,8 @@ TERM_LABELS = {
     "n_codrugs": "Number of co-drugs",
 }
 
+CARDIAC_LABELS = {0: "No cardiac toxicity", 1: "Cardiac toxicity"}
+CARDIAC_COLORS = {0: PALETTE["blue"], 1: PALETTE["rose"]}
 AGE_ORDER = ["13-15", "16-17", "18-19"]
 EXPORT_DPI = 320
 RNG = np.random.default_rng(42)
@@ -124,9 +126,16 @@ def format_p_value(p: float) -> str:
     return f"p = {p:.3f}"
 
 
+def add_shadow(artist) -> None:
+    artist.set_path_effects([
+        patheffects.withSimplePatchShadow(offset=(2, -2), shadow_rgbFace=PALETTE["shadow"], alpha=0.28),
+        patheffects.Normal(),
+    ])
+
+
 def style_axes(ax, grid_axis: str = "y") -> None:
     ax.set_facecolor(PALETTE["panel"])
-    ax.tick_params(colors=PALETTE["ink"], labelsize=10.5)
+    ax.tick_params(colors=PALETTE["ink"], labelsize=11)
     for side in ["top", "right"]:
         ax.spines[side].set_visible(False)
     for side in ["left", "bottom"]:
@@ -142,17 +151,16 @@ def style_axes(ax, grid_axis: str = "y") -> None:
 
 
 def add_title_block(ax, title: str, subtitle: str = "") -> None:
-    ax.set_title(title, loc="left", fontsize=14.5, fontweight="semibold", color=PALETTE["navy"], pad=14)
+    ax.set_title(title, loc="left", fontsize=16, fontweight="bold", color=PALETTE["navy"], pad=18)
     if subtitle:
-        wrapped = textwrap.fill(subtitle, width=72)
         ax.text(
             0,
             1.02,
-            wrapped,
+            subtitle,
             transform=ax.transAxes,
             ha="left",
             va="bottom",
-            fontsize=9.6,
+            fontsize=10.8,
             color=PALETTE["slate"],
         )
 
@@ -163,9 +171,37 @@ def concise_distribution_subtitle(series: pd.Series, stat: float, p: float) -> s
             f"n = {len(series):,}",
             f"mean = {series.mean():.2f}",
             f"median = {series.median():.2f}",
-            f"Shapiro W = {stat:.3f}" if pd.notna(stat) else "Shapiro W = NA",
+            f"W = {stat:.3f}" if pd.notna(stat) else "W = NA",
             format_p_value(p),
         ]
+    )
+
+
+def add_badge(
+    ax,
+    text: str,
+    x: float = 0.98,
+    y: float = 0.98,
+    ha: str = "right",
+    va: str = "top",
+    facecolor: str = "#ffffff",
+) -> None:
+    ax.text(
+        x,
+        y,
+        text,
+        transform=ax.transAxes,
+        ha=ha,
+        va=va,
+        fontsize=9.8,
+        color=PALETTE["ink"],
+        linespacing=1.4,
+        bbox={
+            "boxstyle": "round,pad=0.45,rounding_size=0.12",
+            "facecolor": facecolor,
+            "edgecolor": PALETTE["grid"],
+            "linewidth": 1.0,
+        },
     )
 
 
@@ -175,10 +211,10 @@ def save_figure(fig: plt.Figure, path: Path) -> None:
 
 
 def configure_theme() -> None:
-    sns.set_theme(style="whitegrid", font="DejaVu Sans")
+    sns.set_theme(style="whitegrid", font="DejaVu Serif")
     plt.rcParams.update(
         {
-            "figure.facecolor": "#ffffff",
+            "figure.facecolor": PALETTE["bg"],
             "axes.facecolor": PALETTE["panel"],
             "axes.edgecolor": PALETTE["grid"],
             "axes.labelcolor": PALETTE["ink"],
@@ -187,11 +223,11 @@ def configure_theme() -> None:
             "xtick.color": PALETTE["ink"],
             "ytick.color": PALETTE["ink"],
             "grid.color": PALETTE["grid"],
-            "font.size": 10.5,
-            "axes.titlesize": 14.5,
+            "font.size": 11,
+            "axes.titlesize": 16,
             "axes.labelsize": 12,
             "legend.frameon": False,
-            "legend.fontsize": 9.5,
+            "legend.fontsize": 10,
         }
     )
 
@@ -276,7 +312,7 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
 
         color = SERIES_COLORS[idx % len(SERIES_COLORS)]
 
-        fig, ax = plt.subplots(figsize=(8.4, 5.0), facecolor="#ffffff")
+        fig, ax = plt.subplots(figsize=(9, 5.4), facecolor=PALETTE["bg"])
         sns.histplot(
             s,
             bins="fd" if s.nunique() > 1 else 1,
@@ -295,10 +331,10 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
         style_axes(ax, grid_axis="y")
         ax.set_xlabel(pretty_label(col))
         ax.set_ylabel("Case count")
-        ax.legend(loc="upper right", handlelength=1.6)
+        ax.legend(loc="upper right")
         save_figure(fig, FIG_DIR / HISTOGRAM_NAMES[col])
 
-        fig, ax = plt.subplots(figsize=(6.2, 5.8), facecolor="#ffffff")
+        fig, ax = plt.subplots(figsize=(6.6, 6.2), facecolor=PALETTE["bg"])
         (theoretical, ordered), (slope, intercept, r_value) = stats.probplot(s, dist="norm")
         ax.scatter(theoretical, ordered, s=38, color=color, alpha=0.85, edgecolors="white", linewidths=0.55)
         ax.plot(theoretical, slope * np.asarray(theoretical) + intercept, color=PALETTE["navy"], linewidth=2.2)
@@ -328,7 +364,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     dunn_df = sp.posthoc_dunn(df, val_col="total_acb_with_dph", group_col="age_group", p_adjust="bonferroni")
     dunn_df.to_csv(TAB_DIR / FILE_NAMES["table_posthoc"])
 
-    fig, ax = plt.subplots(figsize=(8.0, 5.8), facecolor="#ffffff")
+    fig, ax = plt.subplots(figsize=(8.8, 6.4), facecolor=PALETTE["bg"])
     order = AGE_ORDER
     plot_df = df[df["age_group"].isin(order)].copy()
     violin = sns.violinplot(
@@ -346,7 +382,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         ax=ax,
     )
     for collection in violin.collections:
-        collection.set_alpha(0.5)
+        collection.set_alpha(0.7)
     sns.boxplot(
         data=plot_df,
         x="age_group",
@@ -363,12 +399,12 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     ymax = np.nanmax(plot_df["total_acb_with_dph"]) if plot_df["total_acb_with_dph"].notna().any() else 1
     ymin = np.nanmin(plot_df["total_acb_with_dph"]) if plot_df["total_acb_with_dph"].notna().any() else 0
     lower = min(0, ymin - max(0.25, 0.05 * max(ymax, 1)))
-    ax.set_ylim(lower, ymax * 1.18 if ymax > 0 else 1.5)
+    ax.set_ylim(lower, ymax * 1.24 if ymax > 0 else 1.5)
 
     summary = plot_df.groupby("age_group")["total_acb_with_dph"].agg(["median", "count"]).reindex(order)
     for idx, row in enumerate(summary.itertuples()):
         ax.scatter(idx, row.median, s=65, color=PALETTE["red"], edgecolors="white", linewidths=0.8, zorder=4)
-        ax.text(idx, lower + 0.02 * (ax.get_ylim()[1] - lower), f"n={int(row.count)}", ha="center", va="bottom", fontsize=9.5, color=PALETTE["slate"])
+        ax.text(idx, lower + 0.02 * (ax.get_ylim()[1] - lower), f"n = {int(row.count)}", ha="center", va="bottom", fontsize=10, color=PALETTE["slate"])
 
     level_map = {lvl: idx for idx, lvl in enumerate(order)}
     pair_y = ymax * 1.06 if ymax > 0 else 1
@@ -378,10 +414,10 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
             if pd.notna(pval) and pval < 0.05:
                 xa, xb = level_map[a], level_map[b]
                 ax.plot([xa, xa, xb, xb], [pair_y, pair_y * 1.015, pair_y * 1.015, pair_y], color=PALETTE["slate"], lw=1.3)
-                ax.text((xa + xb) / 2, pair_y * 1.016, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=10.5)
+                ax.text((xa + xb) / 2, pair_y * 1.018, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
                 pair_y *= 1.06
 
-    add_title_block(ax, "Total ACB Burden by Age Group", f"Kruskal-Wallis H = {k_stat:.2f} | {format_p_value(p_kw)}")
+    add_title_block(ax, "Total ACB Burden Across Age Groups", f"Kruskal-Wallis H = {k_stat:.2f} | {format_p_value(p_kw)} | Violin shows density; box shows median and IQR")
     style_axes(ax, grid_axis="y")
     ax.set_xlabel("Age group")
     ax.set_ylabel("Total ACB (with DPH)")
@@ -390,7 +426,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
     rows.append({"analysis": "C_spearman_acb_vs_severity", "statistic": rho, "p_value": p_sp})
 
-    fig, ax = plt.subplots(figsize=(7.8, 5.8), facecolor="#ffffff")
+    fig, ax = plt.subplots(figsize=(8.4, 6.1), facecolor=PALETTE["bg"])
     severity_df = df[["total_acb_codrugs_only", "max_severity", "cardiac_any"]].dropna().copy()
     severity_df["severity_jittered"] = severity_df["max_severity"] + RNG.normal(0, 0.05, size=len(severity_df))
     ax.scatter(
@@ -411,7 +447,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         line_kws={"color": PALETTE["navy"], "lw": 2.8},
         ax=ax,
     )
-    add_title_block(ax, "ACB Burden Versus Maximum Severity", f"Spearman rho = {rho:.2f} | {format_p_value(p_sp)}")
+    add_title_block(ax, "ACB Burden Versus Maximum Case Severity", f"Spearman rho = {rho:.2f} | {format_p_value(p_sp)} | Points are lightly jittered vertically to reduce overlap")
     style_axes(ax, grid_axis="both")
     ax.set_xlabel("Total ACB (co-drugs only)")
     ax.set_ylabel("Max severity")
@@ -491,7 +527,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     forest_df["significant"] = forest_df["p_value"].fillna(1) < 0.05
     forest_df = forest_df.sort_values("OR", ascending=False).reset_index(drop=True)
 
-    fig, ax = plt.subplots(figsize=(8.8, max(4.0, 0.64 * len(forest_df))), facecolor="#ffffff")
+    fig, ax = plt.subplots(figsize=(10.2, max(4.4, 0.72 * len(forest_df))), facecolor=PALETTE["bg"])
     y = np.arange(len(forest_df))
     has_ci = forest_df["CI_low"].notna().all() and forest_df["CI_high"].notna().all()
     value_text = []
@@ -519,15 +555,18 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
         "Adjusted Odds Ratios for Cardiac Toxicity",
         f"Logistic model adjusted for age and co-drug count; n = {fit_full['n']}, AUC = {fit_full['auc']:.3f}",
     )
-    fig.subplots_adjust(left=0.35, right=0.96, top=0.84, bottom=0.14)
+    text_x = ax.get_xlim()[1] / 1.02
+    for yi, value in enumerate(value_text):
+        ax.text(text_x, yi, value, ha="right", va="center", fontsize=10, color=PALETTE["ink"])
+    fig.subplots_adjust(left=0.29, right=0.97, top=0.88, bottom=0.13)
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"])
 
     roc_df = pred_df.dropna(subset=["pred_prob"]).copy()
     fpr, tpr, _ = roc_curve(roc_df["cardiac_any"], roc_df["pred_prob"])
     auc = fit_full["auc"]
     youden_idx = int(np.argmax(tpr - fpr))
-    fig, ax = plt.subplots(figsize=(6.6, 6.0), facecolor="#ffffff")
-    ax.fill_between(fpr, tpr, color=PALETTE["mint"], alpha=0.22)
+    fig, ax = plt.subplots(figsize=(7.1, 6.4), facecolor=PALETTE["bg"])
+    ax.fill_between(fpr, tpr, color=PALETTE["mint"], alpha=0.35)
     ax.plot(fpr, tpr, color=PALETTE["teal"], lw=3.0, label=f"Model ROC (AUC = {auc:.3f})")
     ax.scatter(fpr[youden_idx], tpr[youden_idx], color=PALETTE["orange"], s=85, edgecolors="white", linewidths=0.8, zorder=3)
     ax.plot([0, 1], [0, 1], color=PALETTE["slate"], ls="--", lw=1.2, label="Chance")
@@ -536,7 +575,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     style_axes(ax, grid_axis="both")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    add_title_block(ax, "ROC Curve for Cardiac Risk Model", f"AUC = {auc:.3f} | Sensitivity = {tpr[youden_idx]:.2f} | Specificity = {1 - fpr[youden_idx]:.2f}")
+    add_title_block(ax, "ROC Curve for the Cardiac Risk Model", f"AUC = {auc:.3f} | Best sensitivity = {tpr[youden_idx]:.2f} | Best specificity = {1 - fpr[youden_idx]:.2f}")
     ax.legend(loc="lower right")
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"])
 
@@ -545,7 +584,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_flowchart(counts: dict[str, int]) -> None:
-    fig, ax = plt.subplots(figsize=(8.3, 6.2), facecolor="#ffffff")
+    fig, ax = plt.subplots(figsize=(9, 7), facecolor=PALETTE["bg"])
     ax.axis("off")
 
     stages = [
@@ -562,17 +601,18 @@ def plot_flowchart(counts: dict[str, int]) -> None:
         rect = FancyBboxPatch(
             (0.10, y),
             0.80,
-            0.11,
-            boxstyle="round,pad=0.015,rounding_size=0.015",
+            0.13,
+            boxstyle="round,pad=0.025,rounding_size=0.03",
             edgecolor=PALETTE["navy"],
-            facecolor="#ffffff",
-            linewidth=1.2,
+            facecolor=fill,
+            linewidth=1.6,
         )
+        add_shadow(rect)
         ax.add_patch(rect)
-        ax.text(0.14, y + 0.072, f"Step {stage_index}", fontsize=9.0, color=PALETTE["slate"], fontweight="semibold")
-        ax.text(0.14, y + 0.043, label, fontsize=11.6, color=PALETTE["navy"], fontweight="semibold")
-        ax.text(0.14, y + 0.016, f"n = {value:,}", fontsize=10.2, color=PALETTE["ink"])
-        ax.text(0.86, y + 0.043, retention, ha="right", fontsize=9.6, color=PALETTE["slate"])
+        ax.text(0.14, y + 0.088, f"Step {stage_index}", fontsize=9.5, color=PALETTE["slate"], fontweight="bold")
+        ax.text(0.14, y + 0.054, label, fontsize=13, color=PALETTE["navy"], fontweight="bold")
+        ax.text(0.14, y + 0.024, f"n = {value:,}", fontsize=11, color=PALETTE["ink"])
+        ax.text(0.86, y + 0.054, retention, ha="right", fontsize=10.2, color=PALETTE["slate"])
         previous = value
 
     for upper, lower in [(0.80, 0.73), (0.60, 0.53), (0.40, 0.33)]:
@@ -580,12 +620,12 @@ def plot_flowchart(counts: dict[str, int]) -> None:
             "",
             xy=(0.5, lower),
             xytext=(0.5, upper),
-            arrowprops={"arrowstyle": "-|>", "lw": 1.4, "color": PALETTE["navy"]},
+            arrowprops={"arrowstyle": "-|>", "lw": 1.8, "color": PALETTE["navy"]},
         )
 
-    ax.text(0.10, 0.95, "Cohort Flow Summary", fontsize=14.5, color=PALETTE["navy"], fontweight="semibold")
-    ax.text(0.10, 0.92, "From adolescent FAERS records to the final analytic cohort", fontsize=9.6, color=PALETTE["slate"])
-    ax.text(0.10, 0.08, f"Final unique PRIMARYID: {counts['Final_unique_PRIMARYID']:,}", fontsize=9.8, color=PALETTE["ink"])
+    ax.text(0.10, 0.96, "Cohort Flow Summary", fontsize=17, color=PALETTE["navy"], fontweight="bold")
+    ax.text(0.10, 0.925, "Progression from all adolescent FAERS records to the analytic diphenhydramine cohort", fontsize=10.8, color=PALETTE["slate"])
+    ax.text(0.10, 0.08, f"Final unique PRIMARYID count: {counts['Final_unique_PRIMARYID']:,}", fontsize=10.5, color=PALETTE["ink"])
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_flow"])
 
 
@@ -617,8 +657,8 @@ def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame
 
 
 def make_dashboard() -> None:
-    fig = plt.figure(figsize=(13.2, 9.2), facecolor="#ffffff")
-    gs = fig.add_gridspec(2, 2, left=0.05, right=0.97, top=0.90, bottom=0.06, wspace=0.10, hspace=0.16)
+    fig = plt.figure(figsize=(14, 10), facecolor=PALETTE["bg"], constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, wspace=0.25, hspace=0.3)
 
     files = [
         FIG_DIR / FILE_NAMES["figure_flow"],
@@ -633,10 +673,12 @@ def make_dashboard() -> None:
         img = plt.imread(img_path)
         ax.imshow(img)
         ax.axis("off")
-        ax.set_title(title, fontsize=11.5, fontweight="semibold", color=PALETTE["navy"], pad=6)
+        panel = FancyBboxPatch((0.01, 0.01), 0.98, 0.98, transform=ax.transAxes, boxstyle="round,pad=0.012,rounding_size=0.03", facecolor="none", edgecolor=PALETTE["grid"], linewidth=1.2)
+        ax.add_patch(panel)
+        ax.set_title(title, fontsize=12.5, fontweight="bold", color=PALETTE["navy"], pad=10)
 
-    fig.suptitle("Adolescent Diphenhydramine FAERS Results Overview", fontsize=15, fontweight="semibold", color=PALETTE["navy"], y=0.96)
-    fig.text(0.5, 0.93, "Key descriptive, association, and prediction figures", ha="center", fontsize=9.8, color=PALETTE["slate"])
+    fig.suptitle("Adolescent Diphenhydramine FAERS Results Overview", fontsize=17, fontweight="bold", color=PALETTE["navy"])
+    fig.text(0.5, 0.965, "Publication-style summary panel for the main cohort, association, and prediction figures", ha="center", fontsize=10.8, color=PALETTE["slate"])
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_dashboard"])
 
 
