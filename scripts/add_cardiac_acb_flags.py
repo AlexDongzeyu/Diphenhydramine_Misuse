@@ -249,7 +249,7 @@ def main() -> None:
         print("- data/lookups/acb_lookup.csv")
         print("- data/lookups/drug_name_map.csv")
         print("\nThen run:")
-        print("python add_cardiac_acb_flags.py")
+        print("python scripts/add_cardiac_acb_flags.py")
         return
 
     cohort_df = pd.read_csv(args.cohort, dtype=str, low_memory=False)
