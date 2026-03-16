@@ -1,3 +1,6 @@
+# Build core statistical outputs and figures from the final cohort table.
+# This script mirrors the Python analysis flow with an R-oriented implementation.
+
 library(tidyverse)
 library(broom)
 library(rstatix)
@@ -26,8 +29,11 @@ cont_tbl <- map_dfr(cont, function(v){
 write_csv(cont_tbl, file.path(tab_dir, "descriptive_continuous.csv"))
 
 cat_tbl <- bind_rows(
+  # Age-group distribution
   df %>% count(age_group, name="count") %>% mutate(variable="age_group", level=as.character(age_group), percent=100*count/sum(count)) %>% select(variable, level, count, percent),
+  # Pre/post warning split
   df %>% count(pre_post_warning, name="count") %>% mutate(variable="pre_post_warning", level=as.character(pre_post_warning), percent=100*count/sum(count)) %>% select(variable, level, count, percent),
+  # Cardiac outcome prevalence
   df %>% count(cardiac_any, name="count") %>% mutate(variable="cardiac_any", level=as.character(cardiac_any), percent=100*count/sum(count)) %>% select(variable, level, count, percent)
 )
 write_csv(cat_tbl, file.path(tab_dir, "descriptive_categorical.csv"))
@@ -45,8 +51,11 @@ shap <- map_dfr(cont, function(v){
 write_csv(shap, file.path(tab_dir, "normality_checks.csv"))
 
 # Core analyses
+# A) ACB (co-drugs only) vs cardiac outcome
 mw <- wilcox.test(total_acb_codrugs_only ~ cardiac_any, data=df)
+# B) ACB (with DPH) across age groups
 kw <- kruskal.test(total_acb_with_dph ~ age_group, data=df)
+# C) Monotonic association between ACB and severity
 sp <- cor.test(df$total_acb_codrugs_only, df$max_severity, method="spearman")
 
 core <- tibble(
@@ -57,32 +66,38 @@ core <- tibble(
 write_csv(core, file.path(tab_dir, "nonparametric_results.csv"))
 
 # Logistic models
+# Primary adjusted model on full cohort.
 model_full <- glm(cardiac_any ~ total_acb_codrugs_only + age_group + pre_post_warning + n_codrugs,
                   data=df, family=binomial)
 full_tbl <- tidy(model_full, conf.int=TRUE, exponentiate=TRUE)
 write_csv(full_tbl, file.path(tab_dir, "logistic_model_full.csv"))
 
+# Stratified model: pre-warning subset.
 model_pre <- glm(cardiac_any ~ total_acb_codrugs_only + age_group + n_codrugs,
                  data=filter(df, pre_post_warning==0), family=binomial)
 pre_tbl <- tidy(model_pre, conf.int=TRUE, exponentiate=TRUE)
 write_csv(pre_tbl, file.path(tab_dir, "logistic_model_pre_warning.csv"))
 
+# Stratified model: post-warning subset.
 model_post <- glm(cardiac_any ~ total_acb_codrugs_only + age_group + n_codrugs,
                   data=filter(df, pre_post_warning==1), family=binomial)
 post_tbl <- tidy(model_post, conf.int=TRUE, exponentiate=TRUE)
 write_csv(post_tbl, file.path(tab_dir, "logistic_model_post_warning.csv"))
 
 # Minimal visuals
+# Distribution comparison by outcome group.
 p1 <- ggplot(df, aes(x=factor(cardiac_any), y=total_acb_codrugs_only)) +
   geom_boxplot() +
   labs(title="ACB burden by cardiac outcome", x="cardiac_any", y="total_acb_codrugs_only")
 ggsave(file.path(fig_dir, "acb_by_cardiac_outcome.png"), p1, width=7, height=5, dpi=220)
 
+# Age-group comparison for total ACB burden.
 p2 <- ggplot(df, aes(x=age_group, y=total_acb_with_dph)) +
   geom_boxplot() +
   labs(title="Total ACB burden across age groups", x="age_group", y="total_acb_with_dph")
 ggsave(file.path(fig_dir, "acb_by_age_group.png"), p2, width=7, height=5, dpi=220)
 
+# Trend visualization for ACB burden vs severity.
 p3 <- ggplot(df, aes(x=total_acb_codrugs_only, y=max_severity)) +
   geom_point() + geom_smooth(method="loess", se=FALSE) +
   labs(title="ACB burden versus case severity", x="total_acb_codrugs_only", y="max_severity")

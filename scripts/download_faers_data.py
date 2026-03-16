@@ -1,3 +1,8 @@
+"""Download quarterly FAERS ZIP archives and extract core ASCII tables.
+
+Only DEMO/DRUG/REAC/OUTC TXT files are extracted for the analysis pipeline.
+"""
+
 import argparse
 import csv
 import time
@@ -11,6 +16,7 @@ TARGET_PREFIXES = ("DEMO", "DRUG", "REAC", "OUTC")
 
 
 def quarter_iter(start_year: int, end_year: int, end_quarter: int):
+    """Yield (year, quarter) pairs from start through requested end quarter."""
     for year in range(start_year, end_year + 1):
         max_quarter = end_quarter if year == end_year else 4
         for quarter in range(1, max_quarter + 1):
@@ -18,6 +24,7 @@ def quarter_iter(start_year: int, end_year: int, end_quarter: int):
 
 
 def download_file(url: str, output_path: Path, timeout: int, retries: int) -> bool:
+    """Download a URL to disk with basic retry logic."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     for attempt in range(1, retries + 1):
@@ -44,6 +51,7 @@ def download_file(url: str, output_path: Path, timeout: int, retries: int) -> bo
 
 
 def extract_target_files(zip_path: Path, extract_dir: Path) -> int:
+    """Extract only target FAERS table files from a downloaded ZIP."""
     extract_dir.mkdir(parents=True, exist_ok=True)
     extracted_count = 0
 
@@ -67,10 +75,12 @@ def extract_target_files(zip_path: Path, extract_dir: Path) -> int:
 
 
 def is_valid_zip(zip_path: Path) -> bool:
+    """Return True when the path exists and is a valid ZIP archive."""
     return zip_path.exists() and zipfile.is_zipfile(zip_path)
 
 
 def main() -> None:
+    """Run the FAERS downloader and write a quarter-level manifest CSV."""
     parser = argparse.ArgumentParser(
         description="Download FAERS quarterly ASCII ZIPs and extract DEMO/DRUG/REAC/OUTC tables."
     )
@@ -103,6 +113,7 @@ def main() -> None:
         print(f"  URL: {url}")
 
         if args.dry_run:
+            # Record planned actions without changing local files.
             manifest_rows.append([f"{year}Q{quarter}", zip_name, "dry_run", 0, str(quarter_dir)])
             continue
 

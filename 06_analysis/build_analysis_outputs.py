@@ -1,3 +1,10 @@
+"""Build publication-ready tables/figures from the final FAERS cohort table.
+
+This script is intentionally end-to-end: it loads the final analysis dataset,
+runs descriptive and inferential statistics, fits a logistic model, and writes
+all outputs into 06_analysis/tables and 06_analysis/figures.
+"""
+
 from pathlib import Path
 import json
 
@@ -73,6 +80,7 @@ PALETTE = {
 
 
 def p_stars(p: float) -> str:
+    """Convert a p-value into a compact significance label."""
     if p < 0.001:
         return "***"
     if p < 0.01:
@@ -83,6 +91,7 @@ def p_stars(p: float) -> str:
 
 
 def flow_counts() -> dict[str, int]:
+    """Collect row/ID counts used in the cohort flow diagram."""
     counts: dict[str, int] = {}
 
     demo = pd.read_csv(FILTERED / FILE_NAMES["demo"], dtype=str, usecols=["PRIMARYID"]) 
@@ -102,6 +111,7 @@ def flow_counts() -> dict[str, int]:
 
 
 def prepare_df() -> pd.DataFrame:
+    """Load the final cohort CSV and coerce analysis columns to numeric types."""
     df = pd.read_csv(FINAL_CSV)
 
     for col in ["AGE", "n_codrugs", "total_acb_with_dph", "total_acb_codrugs_only", "max_severity", "cardiac_any", "cardiac_tier1", "cardiac_tier2", "pre_post_warning"]:
@@ -116,6 +126,7 @@ def prepare_df() -> pd.DataFrame:
 
 
 def build_descriptive_table(df: pd.DataFrame) -> pd.DataFrame:
+    """Create and save descriptive statistics for continuous and categorical variables."""
     continuous = ["AGE", "total_acb_with_dph", "total_acb_codrugs_only", "n_codrugs", "max_severity"]
     categorical = ["age_group", "pre_post_warning", "cardiac_any"]
 
@@ -150,6 +161,7 @@ def build_descriptive_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
+    """Run Shapiro-Wilk checks and save histogram/Q-Q plots per continuous variable."""
     continuous = ["AGE", "total_acb_with_dph", "total_acb_codrugs_only", "n_codrugs", "max_severity"]
     rows = []
     for col in continuous:
@@ -170,6 +182,7 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
         plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(5, 5))
+        # Use scipy's probability plot to visualize normality assumptions.
         from scipy import stats
         stats.probplot(s, dist="norm", plot=ax)
         ax.set_title(f"Q-Q: {col}")
@@ -183,6 +196,7 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
+    """Run core nonparametric analyses and generate key exploratory figures."""
     rows = []
 
     g0 = df.loc[df["cardiac_any"] == 0, "total_acb_codrugs_only"].dropna()
@@ -194,6 +208,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     k_stat, p_kw = kruskal(*groups)
     rows.append({"analysis": "B_kruskal_acb_vs_age_group", "statistic": k_stat, "p_value": p_kw})
 
+    # Post-hoc Dunn test is used after Kruskal-Wallis for pairwise age-group comparisons.
     dunn_df = sp.posthoc_dunn(df, val_col="total_acb_with_dph", group_col="age_group", p_adjust="bonferroni")
     dunn_df.to_csv(TAB_DIR / FILE_NAMES["table_posthoc"])
 
@@ -227,6 +242,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
 
     level_map = {lvl: idx for idx, lvl in enumerate(order)}
     pair_y = ymax * 1.12 if ymax > 0 else 1
+    # Draw significance brackets only for statistically significant pairwise contrasts.
     for a in order:
         for b in order:
             if a >= b:
@@ -271,6 +287,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fit_logit(df: pd.DataFrame):
+    """Fit a logistic model and gracefully fall back to regularized fitting if needed."""
     formula = "cardiac_any ~ total_acb_codrugs_only + AGE + n_codrugs"
     model_obj = smf.logit(formula=formula, data=df)
     fit_method = "mle"
@@ -300,6 +317,8 @@ def fit_logit(df: pd.DataFrame):
         }
         return model, out, fit_stats, pd.DataFrame({"PRIMARYID": df["PRIMARYID"], "cardiac_any": df["cardiac_any"], "pred_prob": pred_prob})
     except Exception:
+        # Separation/convergence issues can occur in sparse safety datasets.
+        # Fallback keeps the pipeline running and still yields probabilities/ORs.
         fit_method = "regularized_l1"
         model = model_obj.fit_regularized(disp=False, alpha=0.1, maxiter=1000)
         coef = model.params
@@ -326,6 +345,7 @@ def fit_logit(df: pd.DataFrame):
 
 
 def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
+    """Run logistic analysis, save model outputs, and render forest/ROC plots."""
     fit_rows = []
 
     model_full, tbl_full, fit_full, pred_df = fit_logit(df)
@@ -373,6 +393,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_flowchart(counts: dict[str, int]) -> None:
+    """Render a simple cohort flowchart from precomputed count checkpoints."""
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.axis("off")
 
@@ -398,6 +419,7 @@ def plot_flowchart(counts: dict[str, int]) -> None:
 
 
 def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame, fit: pd.DataFrame) -> None:
+    """Write a concise markdown summary of counts, tests, and model fit statistics."""
     lines = [
         "# Analysis Results Summary",
         "",
@@ -425,6 +447,7 @@ def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame
 
 
 def make_dashboard() -> None:
+    """Assemble a 2x2 dashboard image from the core generated figures."""
     fig = plt.figure(figsize=(14, 10), facecolor=PALETTE["bg"], constrained_layout=True)
     gs = fig.add_gridspec(2, 2, wspace=0.25, hspace=0.3)
 
@@ -449,6 +472,7 @@ def make_dashboard() -> None:
 
 
 if __name__ == "__main__":
+    # Set a consistent visual style before any plot is created.
     sns.set_theme(style="whitegrid", rc={"axes.facecolor": "#ffffff", "figure.facecolor": PALETTE["bg"]})
 
     counts = flow_counts()
@@ -463,6 +487,7 @@ if __name__ == "__main__":
     save_summary(counts, norm, tests, fit)
     make_dashboard()
 
+    # Save lightweight metadata so downstream reports can verify input/version context.
     (OUT_DIR / FILE_NAMES["metadata"]).write_text(
         json.dumps({
             "input": str(FINAL_CSV),

@@ -1,3 +1,9 @@
+"""Legacy full FAERS pipeline (Phases 3-12) using combined table intermediates.
+
+This script is kept for reproducibility and fallback workflows when the compact
+pipeline is not being used.
+"""
+
 import argparse
 import csv
 import re
@@ -33,10 +39,12 @@ TIER2 = {
 
 
 def log(msg: str) -> None:
+    """Print a pipeline log line with flushing for long-running jobs."""
     print(f"[PIPELINE] {msg}", flush=True)
 
 
 def ensure_dirs(base: Path) -> dict[str, Path]:
+    """Create and return all required pipeline output directories."""
     paths = {
         "combined": base / "02_combined",
         "filtered": base / "03_filtered",
@@ -50,6 +58,7 @@ def ensure_dirs(base: Path) -> dict[str, Path]:
 
 
 def collect_quarter_files(extracted_root: Path, table_prefix: str) -> list[Path]:
+    """Find quarterly FAERS source files for one table prefix."""
     candidates: list[Path] = []
     for quarter_dir in sorted([d for d in extracted_root.iterdir() if d.is_dir()]):
         for file_path in sorted(quarter_dir.iterdir()):
@@ -60,6 +69,7 @@ def collect_quarter_files(extracted_root: Path, table_prefix: str) -> list[Path]
 
 
 def clean_columns(columns: list[str]) -> list[str]:
+    """Drop empty/unnamed fields and normalize header names."""
     cleaned: list[str] = []
     for col in columns:
         if col is None:
@@ -74,12 +84,14 @@ def clean_columns(columns: list[str]) -> list[str]:
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Uppercase and trim dataframe column names."""
     out = df.copy()
     out.columns = [str(col).strip().upper() for col in out.columns]
     return out
 
 
 def combine_table(files: list[Path], out_csv: Path, chunksize: int) -> list[str]:
+    """Concatenate quarterly TXT files into one normalized combined CSV."""
     if not files:
         raise RuntimeError(f"No source files found for {out_csv.name}")
 
@@ -130,10 +142,12 @@ def combine_table(files: list[Path], out_csv: Path, chunksize: int) -> list[str]
 
 
 def to_numeric_id(series: pd.Series) -> pd.Series:
+    """Convert id-like strings into int64 values with -1 fallback."""
     return pd.to_numeric(series, errors="coerce").fillna(-1).astype("int64")
 
 
 def dedupe_demo(demo_all: Path, demo_deduped: Path, chunksize: int) -> None:
+    """Keep one DEMO row per CASEID using max PRIMARYID as the latest report."""
     log("Phase 4: Deduplicating DEMO by CASEID with max PRIMARYID")
     max_primary_by_case: dict[str, int] = {}
 
@@ -170,6 +184,7 @@ def dedupe_demo(demo_all: Path, demo_deduped: Path, chunksize: int) -> None:
 
 
 def filter_demo_teens(demo_deduped: Path, demo_teens: Path, teen_ids_txt: Path, chunksize: int) -> set[str]:
+    """Filter deduped DEMO to adolescents (13-19 years), US or unknown country."""
     log("Phase 5: Filtering DEMO to US adolescents with country unknown retained")
     if demo_teens.exists():
         demo_teens.unlink()
@@ -206,6 +221,7 @@ def filter_demo_teens(demo_deduped: Path, demo_teens: Path, teen_ids_txt: Path, 
 
 
 def filter_table_by_ids(input_csv: Path, out_csv: Path, id_set: set[str], chunksize: int) -> None:
+    """Filter a combined table to rows whose PRIMARYID is in the provided ID set."""
     if out_csv.exists():
         out_csv.unlink()
 
@@ -222,6 +238,7 @@ def filter_table_by_ids(input_csv: Path, out_csv: Path, id_set: set[str], chunks
 
 
 def identify_dph_ids(drug_teens_csv: Path, chunksize: int) -> set[str]:
+    """Identify teen cases with diphenhydramine exposure using DRUG terms/roles."""
     log("Phase 7: Identifying diphenhydramine suspected/suspected-secondary cases")
     confirmed_ids: set[str] = set()
 
@@ -243,6 +260,7 @@ def identify_dph_ids(drug_teens_csv: Path, chunksize: int) -> set[str]:
 
 
 def normalize_text(value: str) -> str:
+    """Normalize text into uppercase alphanumeric token form for matching."""
     text = str(value).upper().strip()
     text = re.sub(r"[^A-Z0-9]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -250,6 +268,7 @@ def normalize_text(value: str) -> str:
 
 
 def build_rxnorm_map(rxnorm_rrf: Path, chunksize: int) -> dict[str, str]:
+    """Build RxNorm ingredient dictionary from RXNCONSO IN terms."""
     log("Phase 8: Building RxNorm IN dictionary")
     rx_map: dict[str, str] = {}
     names = [f"C{i}" for i in range(19)]
@@ -275,6 +294,7 @@ def build_rxnorm_map(rxnorm_rrf: Path, chunksize: int) -> dict[str, str]:
 
 
 def map_generic_name(drugname: str, prod_ai: str, rx_map: dict[str, str]) -> tuple[str | None, int]:
+    """Map FAERS drug text to normalized ingredient name and match flag."""
     dn = normalize_text(drugname)
     pa = normalize_text(prod_ai)
 
@@ -293,6 +313,7 @@ def map_generic_name(drugname: str, prod_ai: str, rx_map: dict[str, str]) -> tup
 
 
 def normalize_drug_table(drug_dph_csv: Path, out_csv: Path, rx_map: dict[str, str], chunksize: int) -> None:
+    """Append ingredient mapping fields to DPH DRUG records."""
     if out_csv.exists():
         out_csv.unlink()
 
@@ -310,6 +331,7 @@ def normalize_drug_table(drug_dph_csv: Path, out_csv: Path, rx_map: dict[str, st
 
 
 def score_acb_per_case(drug_norm_csv: Path, acb_csv: Path, out_csv: Path) -> pd.DataFrame:
+    """Aggregate per-case ACB burden and co-drug counts."""
     log("Phase 9: Calculating ACB per case")
     d = normalize_columns(pd.read_csv(drug_norm_csv, dtype=str, low_memory=False))
     a = pd.read_csv(acb_csv, dtype=str, low_memory=False)
@@ -337,6 +359,7 @@ def score_acb_per_case(drug_norm_csv: Path, acb_csv: Path, out_csv: Path) -> pd.
 
 
 def aggregate_reac(reac_csv: Path) -> pd.DataFrame:
+    """Convert REAC PT rows into tier-specific and overall cardiac indicators."""
     log("Phase 10: Aggregating cardiac outcomes from REAC")
     r = normalize_columns(pd.read_csv(reac_csv, dtype=str, low_memory=False))
     r["PT"] = r["PT"].astype(str).str.strip()
@@ -354,6 +377,7 @@ def aggregate_reac(reac_csv: Path) -> pd.DataFrame:
 
 
 def aggregate_outc(outc_csv: Path) -> pd.DataFrame:
+    """Map OUTC codes to severity levels and keep max per case."""
     log("Phase 11: Aggregating severity from OUTC")
     o = normalize_columns(pd.read_csv(outc_csv, dtype=str, low_memory=False))
     code = o["OUTC_COD"].astype(str).str.strip().str.upper()
@@ -372,6 +396,7 @@ def build_final_table(
     severity: pd.DataFrame,
     out_csv: Path,
 ) -> None:
+    """Merge all case-level features into the final analysis-ready dataset."""
     log("Phase 12: Building final analysis table")
     d = normalize_columns(pd.read_csv(demo_teens_csv, dtype=str, low_memory=False))
     d["PRIMARYID"] = d["PRIMARYID"].astype(str).str.strip()
@@ -402,6 +427,7 @@ def build_final_table(
     age_num = pd.to_numeric(final_df.get("AGE", ""), errors="coerce")
     final_df["age_group"] = pd.cut(age_num, bins=[12, 15, 17, 19], labels=["13-15", "16-17", "18-19"])
 
+    # FDA warning breakpoint: September 2020 onward is coded as post-warning.
     final_df["pre_post_warning"] = (
         (final_df["YEAR_NUM"] > 2020)
         | ((final_df["YEAR_NUM"] == 2020) & (final_df["MONTH"].fillna(0) >= 9))
@@ -413,6 +439,7 @@ def build_final_table(
 
 
 def main() -> None:
+    """Run full legacy workflow from extracted FAERS files to final cohort output."""
     parser = argparse.ArgumentParser(description="Run full FAERS teen diphenhydramine analysis pipeline (Phases 3-12).")
     parser.add_argument("--base-dir", default=".")
     parser.add_argument("--extracted-root", default="data/faers_extracted")
@@ -440,7 +467,7 @@ def main() -> None:
 
     paths = ensure_dirs(base_dir)
 
-    # copy ACB into requested raw folder location
+    # Copy ACB lookup into the standardized raw location expected by downstream steps.
     acb_out = paths["raw_acb"] / "acb_scores.csv"
     pd.read_csv(acb_csv, dtype=str).loc[:, ["generic_name", "acb_score"]].to_csv(acb_out, index=False)
 

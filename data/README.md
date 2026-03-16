@@ -9,5 +9,5 @@ Folders
 - lookups/: drug-name and ACB lookup tables used by the pipeline.
 
 How it connects
-- download_faers_data.py fills faers_raw and faers_extracted.
-- build_faers_cohort.py reads faers_extracted and lookups during cohort construction.
+- scripts/download_faers_data.py fills faers_raw and faers_extracted.
+- scripts/build_faers_cohort.py reads faers_extracted and lookups during cohort construction.
