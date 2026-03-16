@@ -1,3 +1,11 @@
+"""Audit and repair teen DEMO outputs against raw quarterly FAERS DEMO files.
+
+The script can:
+1) compare recovered teen records against expected records from raw source files,
+2) write missing rows, and
+3) produce a repaired CSV by replacing missing CASEIDs.
+"""
+
 import argparse
 import csv
 from pathlib import Path
@@ -6,16 +14,19 @@ import pandas as pd
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Uppercase/trim column names to keep schema handling consistent."""
     out = df.copy()
     out.columns = [str(col).strip().upper() for col in out.columns]
     return out
 
 
 def to_numeric_id(series: pd.Series) -> pd.Series:
+    """Convert PRIMARYID values to numeric ids; invalid values become -1."""
     return pd.to_numeric(series, errors="coerce").fillna(-1).astype("int64")
 
 
 def collect_quarter_files(extracted_root: Path, table_prefix: str) -> list[Path]:
+    """Return all quarterly FAERS files that match the requested table prefix."""
     candidates: list[Path] = []
     for quarter_dir in sorted(d for d in extracted_root.iterdir() if d.is_dir()):
         for file_path in sorted(quarter_dir.iterdir()):
@@ -26,6 +37,7 @@ def collect_quarter_files(extracted_root: Path, table_prefix: str) -> list[Path]
 
 
 def read_faers_chunks(file_path: Path, chunksize: int):
+    """Stream a FAERS TXT table in chunks using FAERS-specific delimiter/encoding."""
     for chunk in pd.read_csv(
         file_path,
         sep="$",
@@ -44,6 +56,7 @@ def read_faers_chunks(file_path: Path, chunksize: int):
 
 
 def build_max_primary_by_case(demo_files: list[Path], chunksize: int) -> dict[str, int]:
+    """Compute latest version per CASEID using max PRIMARYID across all quarters."""
     max_primary_by_case: dict[str, int] = {}
     for file_path in demo_files:
         for chunk in read_faers_chunks(file_path, chunksize):
@@ -61,6 +74,7 @@ def build_max_primary_by_case(demo_files: list[Path], chunksize: int) -> dict[st
 
 
 def filtered_demo_rows(file_path: Path, chunksize: int, max_primary_by_case: dict[str, int]):
+    """Yield teen US/unknown-country DEMO rows after CASEID deduplication."""
     for chunk in read_faers_chunks(file_path, chunksize):
         chunk["CASEID"] = chunk["CASEID"].astype(str).str.strip()
         chunk["PRIMARYID"] = chunk["PRIMARYID"].astype(str).str.strip()
@@ -85,6 +99,7 @@ def filtered_demo_rows(file_path: Path, chunksize: int, max_primary_by_case: dic
 
 
 def normalize_mixed_demo_csv(input_csv: Path, output_csv: Path, schema_columns: list[str]) -> tuple[int, int, int]:
+    """Normalize mixed-width DEMO CSV rows into one target schema layout."""
     if output_csv.exists():
         output_csv.unlink()
 
@@ -111,6 +126,7 @@ def normalize_mixed_demo_csv(input_csv: Path, output_csv: Path, schema_columns: 
                     normalized_rows += 1
                     continue
 
+                # Legacy exports occasionally include 26-field rows; remap to 23-field schema.
                 if len(row) == 26 and expected_fields == 23:
                     mapped = [""] * expected_fields
                     mapped[0:9] = row[0:9]
@@ -142,6 +158,7 @@ def normalize_mixed_demo_csv(input_csv: Path, output_csv: Path, schema_columns: 
 
 
 def main() -> None:
+    """Run requested audit/normalize/repair mode based on CLI arguments."""
     parser = argparse.ArgumentParser(description="Audit and repair the teen DEMO cohort against raw FAERS DEMO source.")
     parser.add_argument("--base-dir", default=".")
     parser.add_argument("--recovered-csv", default="03_filtered/teen_demo_records.csv")
@@ -177,6 +194,7 @@ def main() -> None:
         print(f"normalized_remapped_rows={remapped_rows}")
         return
 
+    # IDs currently present in the recovered teen DEMO output.
     recovered_ids = set(
         pd.read_csv(recovered_csv, dtype=str, usecols=["PRIMARYID"], low_memory=False)["PRIMARYID"]
         .astype(str)
@@ -197,6 +215,7 @@ def main() -> None:
     if write_missing_csv and write_missing_csv.exists():
         write_missing_csv.unlink()
 
+    # Compare expected rows quarter-by-quarter and optionally persist missing rows.
     for file_path in demo_files:
         quarter = file_path.parent.name
         quarter_expected = 0
@@ -245,6 +264,7 @@ def main() -> None:
             )
 
     if write_repaired_csv:
+        # Rebuild file by removing rows for affected CASEIDs, then append corrected rows.
         if not write_missing_csv or not write_missing_csv.exists():
             raise FileNotFoundError("--write-repaired-csv requires a missing CSV produced by --write-missing-csv")
 

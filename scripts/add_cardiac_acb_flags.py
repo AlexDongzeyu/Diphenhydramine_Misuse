@@ -1,3 +1,9 @@
+"""Add cardiac outcome flags and anticholinergic burden features to a cohort.
+
+This script joins REAC and DRUG-derived features back to an already filtered
+cohort using PRIMARYID as the case key.
+"""
+
 import argparse
 from pathlib import Path
 import re
@@ -29,6 +35,7 @@ TIER_2_SERIOUS_CARDIAC_EVENT = [
 
 
 def normalize_drug_name(name: str) -> str:
+    """Normalize free-text drug names for robust matching across data sources."""
     text = str(name).lower().strip()
     text = text.replace("/", " ")
     text = re.sub(r"[^a-z0-9\s]", " ", text)
@@ -56,10 +63,11 @@ def add_cardiac_outcomes(
     reac_df["PRIMARYID"] = reac_df["PRIMARYID"].astype(str).str.strip()
     reac_df["PT"] = reac_df["PT"].astype(str).str.strip()
 
-    # Exact filtering requested
+    # Keep only the specified MedDRA PTs that define the cardiac signal set.
     cardiac_cases = reac_df[reac_df["PT"].isin(CARDIAC_OUTCOMES)].copy()
 
     def classify_tier(pt: str) -> str:
+        """Map each PT to the study's Tier 1/Tier 2 severity bucket."""
         if pt in TIER_2_SERIOUS_CARDIAC_EVENT:
             return "Tier 2 — Serious cardiac event"
         if pt in TIER_1_QT_SIGNAL:
@@ -110,6 +118,7 @@ def add_acb_scores(
     if "generic_name" not in acb_lookup_df.columns or "acb_score" not in acb_lookup_df.columns:
         raise ValueError("acb_lookup_df must contain generic_name and acb_score")
 
+    # Accept common FAERS naming fields to support varying DRUG schemas.
     candidate_name_cols = ["DRUGNAME", "PROD_AI", "drugname", "prod_ai", "generic_name"]
     drug_name_col = next((col for col in candidate_name_cols if col in drug_df.columns), None)
     if drug_name_col is None:
@@ -157,6 +166,7 @@ def add_acb_scores(
     )
     matched_drug_rows = drug_with_acb[drug_with_acb["acb_score"].notna()].copy()
 
+    # Aggregate row-level matches into case-level ACB burden features.
     case_scores = (
         matched_drug_rows.groupby("PRIMARYID", as_index=False)
         .agg(
@@ -177,6 +187,7 @@ def add_acb_scores(
 
 
 def main() -> None:
+    """Parse CLI arguments, run joins/scoring, and save output files."""
     parser = argparse.ArgumentParser(
         description=(
             "Flag FAERS cardiac outcomes (hardcoded MedDRA PTs) from REAC and join "
@@ -258,7 +269,9 @@ def main() -> None:
     acb_lookup_df = pd.read_csv(args.acb_lookup, dtype=str, low_memory=False)
     drug_name_map_df = pd.read_csv(args.drug_name_map, dtype=str, low_memory=False) if drug_name_map_path.exists() else None
 
+    # Step 1: outcome flags from REAC.
     cohort_with_outcomes, cardiac_cases = add_cardiac_outcomes(cohort_df, reac_df)
+    # Step 2: ACB burden from DRUG + lookup.
     cohort_with_cardiac_and_acb, drug_acb_matches = add_acb_scores(
         cohort_with_outcomes,
         drug_df,
