@@ -2,6 +2,11 @@
 
 All generated analysis figures.
 
+This folder is organized into:
+
+- core and diagnostic figures in the root,
+- a curated final deliverables subset in `final/`.
+
 ## Produced by
 
 - `06_analysis/build_analysis_outputs.py`
@@ -9,7 +14,20 @@ All generated analysis figures.
 
 ## Key figure groups
 
-- Core analysis:
+
+- Final deliverables (`final/`):
+	- `cohort_flow.png`
+	- `acb_by_age_group.png`
+	- `acb_vs_severity.png`
+	- `logistic_odds_ratios.png`
+	- `cardiac_risk_roc.png`
+	- `roc_dual.png`
+	- `calibration_curve_cv.png`
+	- `shap_beeswarm.png`
+	- `drug_cooccurrence_network.png`
+	- `sex_stratified_acb_violin.png`
+
+- Core analysis (root):
 	- `cohort_flow.png`
 	- `acb_by_age_group.png`
 	- `acb_vs_severity.png`
@@ -17,19 +35,20 @@ All generated analysis figures.
 	- `cardiac_risk_roc.png`
 	- `overview_dashboard.png`
 
-- Model explainability and comparison:
+
+- Model explainability and comparison (root):
 	- `shap_beeswarm.png`
-	- `shap_beeswarm_final.png`
 	- `calibration_curve_cv.png`
-	- `calibration_curve.png`
 	- `roc_dual.png`
 
-- Network and subgroup plots:
+
+- Network and subgroup plots (root):
 	- `drug_cooccurrence_network.png`
 	- `acb_by_cardiac_outcome.png`
 	- `sex_stratified_acb_violin.png`
 
-- Distribution diagnostics:
+
+- Distribution diagnostics (root):
 	- `age_histogram.png`, `age_qq_plot.png`
 	- `acb_with_dph_histogram.png`, `acb_with_dph_qq_plot.png`
 	- `acb_codrugs_only_histogram.png`, `acb_codrugs_only_qq_plot.png`

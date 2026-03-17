@@ -86,8 +86,8 @@ write_csv(shap_tbl, file.path(tab_dir, "normality_checks.csv"))
 # Core analyses
 # A) ACB (co-drugs only) vs cardiac outcome
 mw <- wilcox.test(total_acb_codrugs_only ~ cardiac_any, data = df)
-# B) ACB (with DPH) across age groups
-kw <- kruskal.test(total_acb_with_dph ~ age_group, data = df)
+# B) Co-medication ACB across age groups
+kw <- kruskal.test(total_acb_codrugs_only ~ age_group, data = df)
 # C) Monotonic association between ACB and severity
 sp <- cor.test(df$total_acb_codrugs_only, df$max_severity, method = "spearman", exact = FALSE)
 
@@ -321,26 +321,26 @@ p_stars <- function(p) {
 }
 
 df_age <- df %>%
-  filter(!is.na(age_group), !is.na(total_acb_with_dph)) %>%
+  filter(!is.na(age_group), !is.na(total_acb_codrugs_only)) %>%
   mutate(age_group = factor(as.character(age_group), levels = c("13-15", "16-17", "18-19")))
 
-ymax_age <- max(df_age$total_acb_with_dph, na.rm = TRUE)
+ymax_age <- max(df_age$total_acb_codrugs_only, na.rm = TRUE)
 label_y <- ymax_age * 0.84
 bracket_y <- ymax_age * 0.94
 kw_label <- sprintf("Kruskal p=%.3g %s", kw$p.value, p_stars(kw$p.value))
 
-p2 <- ggplot(df_age, aes(x = age_group, y = total_acb_with_dph, fill = age_group)) +
+p2 <- ggplot(df_age, aes(x = age_group, y = total_acb_codrugs_only, fill = age_group)) +
   geom_boxplot(width = 0.55, alpha = 0.65, outlier.shape = 1, outlier.alpha = 0.55) +
   geom_jitter(width = 0.16, alpha = 0.35, size = 1.5, color = "gray40") +
   scale_fill_manual(values = c("13-15" = youreka_colors[["blue_light"]], "16-17" = youreka_colors[["orange_light"]], "18-19" = youreka_colors[["mint_light"]])) +
   labs(
-    title = "ACB by Age Group",
-    subtitle = "Total ACB burden across age groups",
+    title = "Co-medication ACB by Age Group",
+    subtitle = "Total co-medication anticholinergic burden across age groups",
     x = "Age group",
-    y = "Total ACB (with DPH)"
+    y = "Total ACB (co-medications only)"
   ) +
   annotate("text", x = 2, y = label_y, label = kw_label, color = "#b91c1c", fontface = "bold", size = 4.4) +
-  coord_cartesian(ylim = c(min(0, min(df_age$total_acb_with_dph, na.rm = TRUE)), ymax_age * 1.10)) +
+  coord_cartesian(ylim = c(min(0, min(df_age$total_acb_codrugs_only, na.rm = TRUE)), ymax_age * 1.10)) +
   theme(
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 17),

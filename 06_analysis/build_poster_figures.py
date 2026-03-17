@@ -42,6 +42,11 @@ COLORS = {
 
 
 KEEP_FIGURES = [
+    "cohort_flow.png",
+    "acb_vs_severity.png",
+    "roc_dual.png",
+    "calibration_curve_cv.png",
+    "sex_stratified_acb_violin.png",
     "drug_cooccurrence_network.png",
     "shap_beeswarm.png",
     "cardiac_risk_roc.png",
@@ -275,6 +280,11 @@ def write_manifest(rows: list[tuple[str, str, str, str]]) -> None:
     keep_list = DOCS_DIR / "selected_files.txt"
     keep_lines = [
         "Final poster figures (unannotated):",
+        "- final/cohort_flow.png",
+        "- final/acb_vs_severity.png",
+        "- final/roc_dual.png",
+        "- final/calibration_curve_cv.png",
+        "- final/sex_stratified_acb_violin.png",
         "- final/drug_cooccurrence_network.png",
         "- final/shap_beeswarm.png",
         "- final/cardiac_risk_roc.png",
@@ -329,14 +339,6 @@ def main() -> None:
 
     # Stage 2: copy finalized figure assets from analysis outputs.
     rows = copy_curated_figures()
-
-    rows.extend([
-        ("final/drug_cooccurrence_network.png", "analysis_core", "copied from figures", "Unannotated original"),
-        ("final/shap_beeswarm.png", "analysis_core", "copied from figures", "Unannotated original"),
-        ("final/cardiac_risk_roc.png", "analysis_core", "copied from figures", "Unannotated original"),
-        ("final/logistic_odds_ratios.png", "analysis_core", "copied from figures", "Unannotated original"),
-        ("final/acb_by_age_group.png", "analysis_core", "copied from figures", "Unannotated original"),
-    ])
 
     blueprint = DOCS_DIR / "layout_blueprint.png"
 

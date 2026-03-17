@@ -1,4 +1,9 @@
 Final poster figures (unannotated):
+- final/cohort_flow.png
+- final/acb_vs_severity.png
+- final/roc_dual.png
+- final/calibration_curve_cv.png
+- final/sex_stratified_acb_violin.png
 - final/drug_cooccurrence_network.png
 - final/shap_beeswarm.png
 - final/cardiac_risk_roc.png

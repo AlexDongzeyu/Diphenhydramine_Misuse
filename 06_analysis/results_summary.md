@@ -14,7 +14,7 @@
 
 ## Core tests
 - A_mann_whitney_acb_vs_cardiac: statistic=1098, p=0.991 ns
-- B_kruskal_acb_vs_age_group: statistic=8.034, p=0.018 *
+- B_kruskal_acb_vs_age_group: statistic=5.193, p=0.0745 ns
 - C_spearman_acb_vs_severity: statistic=0.1373, p=0.0463 *
 
 ## Logistic model fit

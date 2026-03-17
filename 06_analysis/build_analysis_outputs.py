@@ -58,7 +58,7 @@ FILE_NAMES = {
     "table_cv_predictions": "model_predictions_cv.csv",
     "table_cv_metrics": "model_cv_metrics.csv",
     "table_modeling_n": "modeling_sample_size.csv",
-    "table_p_values_bh": "p_values_bh.csv",
+    "table_p_values_bh": "p_values_bh_python_core.csv",
     "summary": "results_summary.md",
     "metadata": "results_metadata.json",
 }
@@ -258,12 +258,12 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     u_stat, p_mw = mannwhitneyu(g0, g1, alternative="two-sided")
     rows.append({"analysis": "A_mann_whitney_acb_vs_cardiac", "statistic": u_stat, "p_value": p_mw})
 
-    groups = [g.dropna().values for _, g in df.groupby("age_group")["total_acb_with_dph"]]
+    groups = [g.dropna().values for _, g in df.groupby("age_group")["total_acb_codrugs_only"]]
     k_stat, p_kw = kruskal(*groups)
     rows.append({"analysis": "B_kruskal_acb_vs_age_group", "statistic": k_stat, "p_value": p_kw})
 
     # Post-hoc Dunn test is used after Kruskal-Wallis for pairwise age-group comparisons.
-    dunn_df = sp.posthoc_dunn(df, val_col="total_acb_with_dph", group_col="age_group", p_adjust="bonferroni")
+    dunn_df = sp.posthoc_dunn(df, val_col="total_acb_codrugs_only", group_col="age_group", p_adjust="bonferroni")
     dunn_df.to_csv(TAB_DIR / FILE_NAMES["table_posthoc"])
 
     fig, ax = plt.subplots(figsize=(7.5, 5.2))
@@ -271,7 +271,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     sns.boxplot(
         data=df,
         x="age_group",
-        y="total_acb_with_dph",
+        y="total_acb_codrugs_only",
         order=order,
         hue="age_group",
         legend=False,
@@ -282,7 +282,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     sns.stripplot(
         data=df,
         x="age_group",
-        y="total_acb_with_dph",
+        y="total_acb_codrugs_only",
         order=order,
         color=PALETTE["slate"],
         alpha=0.35,
@@ -290,7 +290,7 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         jitter=0.2,
         ax=ax,
     )
-    ymax = np.nanmax(df["total_acb_with_dph"]) if df["total_acb_with_dph"].notna().any() else 1
+    ymax = np.nanmax(df["total_acb_codrugs_only"]) if df["total_acb_codrugs_only"].notna().any() else 1
     ax.set_ylim(top=ymax * 1.30 if ymax > 0 else 1.5)
     ax.text(1, ymax * 1.05 if ymax > 0 else 0.5, f"Kruskal p={p_kw:.3g} {p_stars(p_kw)}", ha="center", color=PALETTE["red"], fontweight="bold")
 
@@ -308,9 +308,9 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
                 ax.text((xa + xb) / 2, pair_y * 1.015, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
                 pair_y *= 1.06
 
-    ax.set_title("Total ACB burden across age groups", color=PALETTE["blue"], fontweight="bold")
+    ax.set_title("Co-medication ACB burden across age groups", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel(human_label("age_group"))
-    ax.set_ylabel(human_label("total_acb_with_dph"))
+    ax.set_ylabel(human_label("total_acb_codrugs_only"))
     fig.tight_layout()
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_age_group"], dpi=220)
     plt.close(fig)
@@ -450,7 +450,6 @@ def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[st
     ax.set_title("Calibration curves (5-bin OOF probabilities)", color=PALETTE["blue"], fontweight="bold")
     fig.tight_layout()
     save_figure(fig, FIG_DIR / "calibration_curve_cv.png", dpi=220)
-    save_figure(fig, FIG_DIR / "calibration_curve.png", dpi=300)
     plt.close(fig)
 
     # This model is strictly for SHAP interpretability. All AUC metrics come from CV above.
@@ -458,23 +457,32 @@ def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[st
         rf_model.fit(X_df, y)
         explainer = shap.TreeExplainer(rf_model)
         shap_values = explainer.shap_values(X_df)
+        shap_for_plot = None
+
+        # Explicit class handling avoids plotting the wrong class in binary outputs.
         if isinstance(shap_values, list) and len(shap_values) > 1:
             shap_for_plot = shap_values[1]
         elif isinstance(shap_values, np.ndarray) and shap_values.ndim == 3:
             # Newer SHAP versions may return (n_samples, n_features, n_classes).
             shap_for_plot = shap_values[:, :, 1]
+        elif isinstance(shap_values, np.ndarray) and shap_values.ndim == 2:
+            if getattr(rf_model, "n_classes_", None) == 2 and shap_values.shape[1] == X_df.shape[1]:
+                # For binary TreeExplainer, 2D output corresponds to the positive class.
+                shap_for_plot = shap_values
+            else:
+                print("Unexpected 2D SHAP output shape; skipping SHAP beeswarm export.")
         else:
-            shap_for_plot = shap_values
+            print("Unexpected SHAP output format; skipping SHAP beeswarm export.")
 
-        # Display publication-ready feature names on SHAP outputs.
-        X_display = X_df.rename(columns={c: human_label(c) for c in X_df.columns})
-        plt.figure(figsize=(11, 6.5))
-        shap.summary_plot(shap_for_plot, X_display, show=False, plot_size=(11, 6.5))
-        fig_shap = plt.gcf()
-        fig_shap.subplots_adjust(left=0.28, right=0.98, top=0.93, bottom=0.18)
-        save_figure(fig_shap, FIG_DIR / "shap_beeswarm.png", dpi=300)
-        save_figure(fig_shap, FIG_DIR / "shap_beeswarm_final.png", dpi=300)
-        plt.close()
+        if shap_for_plot is not None:
+            # Display publication-ready feature names on SHAP outputs.
+            X_display = X_df.rename(columns={c: human_label(c) for c in X_df.columns})
+            plt.figure(figsize=(11, 6.5))
+            shap.summary_plot(shap_for_plot, X_display, show=False, plot_size=(11, 6.5))
+            fig_shap = plt.gcf()
+            fig_shap.subplots_adjust(left=0.28, right=0.98, top=0.93, bottom=0.18)
+            save_figure(fig_shap, FIG_DIR / "shap_beeswarm.png", dpi=300)
+            plt.close()
     else:
         print("SHAP is not installed; skipping SHAP beeswarm export.")
 
@@ -482,7 +490,7 @@ def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[st
 
 
 def save_bh_table(tests: pd.DataFrame) -> pd.DataFrame:
-    """Create a BH-adjusted p-value table for Python-native tests (R adds DeLong later)."""
+    """Create a BH table for Python core tests only; use R BH table as study-level primary."""
 
     def bh_adjust(p_values: pd.Series) -> pd.Series:
         vals = p_values.astype(float).values
@@ -508,7 +516,7 @@ def save_bh_table(tests: pd.DataFrame) -> pd.DataFrame:
     return p_tbl
 
 
-def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
+def logistic_and_forest(df: pd.DataFrame, cv_pred_df: pd.DataFrame | None = None) -> pd.DataFrame:
     """Run logistic analysis, save model outputs, and render forest/ROC plots."""
     fit_rows = []
 
@@ -538,9 +546,19 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"], dpi=220)
     plt.close(fig)
 
-    roc_df = pred_df.dropna(subset=["pred_prob"]).copy()
-    fpr, tpr, _ = roc_curve(roc_df["cardiac_any"], roc_df["pred_prob"])
-    auc = fit_full["auc"]
+    # Prefer strict out-of-fold probabilities for ROC plotting to avoid in-sample leakage.
+    if cv_pred_df is not None and {"cardiac_any", "lr_prob"}.issubset(cv_pred_df.columns):
+        roc_df = cv_pred_df.dropna(subset=["cardiac_any", "lr_prob"]).copy()
+        score_col = "lr_prob"
+        roc_title = "ROC curve for the cardiac risk model (OOF logistic probabilities)"
+        auc = roc_auc_score(roc_df["cardiac_any"], roc_df[score_col])
+    else:
+        roc_df = pred_df.dropna(subset=["cardiac_any", "pred_prob"]).copy()
+        score_col = "pred_prob"
+        roc_title = "ROC curve for the cardiac risk model (in-sample fallback)"
+        auc = fit_full["auc"]
+
+    fpr, tpr, _ = roc_curve(roc_df["cardiac_any"], roc_df[score_col])
     fig, ax = plt.subplots(figsize=(6.8, 6.0))
     ax.plot(fpr, tpr, color=PALETTE["teal"], lw=2.5, label=f"AUC = {auc:.3f}")
     ax.plot([0, 1], [0, 1], color=PALETTE["slate"], ls="--", lw=1.2)
@@ -548,7 +566,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     ax.set_ylim(0, 1.02)
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title("ROC curve for the cardiac risk model", color=PALETTE["blue"], fontweight="bold")
+    ax.set_title(roc_title, color=PALETTE["blue"], fontweight="bold")
     ax.legend(loc="lower right", frameon=True)
     fig.tight_layout()
     save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"], dpi=220)
@@ -664,8 +682,8 @@ if __name__ == "__main__":
     build_descriptive_table(df)
     norm = normality_checks(df)
     tests = analysis_a_b_c(df)
-    fit = logistic_and_forest(df)
-    _, cv_metrics, modeling_n = run_cv_models(df)
+    cv_pred_df, cv_metrics, modeling_n = run_cv_models(df)
+    fit = logistic_and_forest(df, cv_pred_df=cv_pred_df)
     save_bh_table(tests)
 
     # 3) Write summaries and composite dashboard for reporting.
