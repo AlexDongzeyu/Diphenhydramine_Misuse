@@ -19,3 +19,8 @@
 
 ## Logistic model fit
 - full: n=211, pseudo_r2=0.1244, AIC=83.65, AUC=0.753
+
+## CV model performance (leak-free out-of-fold)
+- Modeling sample: n_model=211 / n_total=211 (dropped_missing=0)
+- logistic_regression_cv: AUC=0.653
+- random_forest_cv: AUC=0.820

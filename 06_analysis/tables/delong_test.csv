@@ -1,0 +1,2 @@
+auc_rf,auc_lr,p_value_delong,method
+0.8204545454545455,0.6531818181818182,0.11608370746592127,DeLong paired ROC test

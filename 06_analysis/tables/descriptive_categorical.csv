@@ -1,0 +1,7 @@
+variable,level,count,percent
+age_group,13-15,70,33.175355450236964
+age_group,16-17,63,29.85781990521327
+age_group,18-19,78,36.96682464454976
+pre_post_warning,0,211,100
+cardiac_any,0,200,94.7867298578199
+cardiac_any,1,11,5.213270142180095

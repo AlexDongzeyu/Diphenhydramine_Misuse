@@ -1,0 +1,2 @@
+model,term,estimate,conf.low,conf.high,p.value,note
+post_warning,NA,NA,NA,NA,NA,Skipped: cardiac_any has <2 classes

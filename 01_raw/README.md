@@ -1,10 +1,11 @@
 # 01_raw
 
-Purpose: local copies of lookup files used directly by the pipeline.
+Pipeline lookup staging area.
 
-Files
-- acb/acb_scores.csv: pipeline-formatted ACB lookup copied from data/lookups/acb_lookup.csv.
+## Key file
 
-How it connects
-- scripts/build_faers_cohort.py writes acb/acb_scores.csv here before case-level ACB scoring.
-- 04_processed/acb_by_case.csv is built from this lookup plus normalized DPH drug records.
+- `acb/acb_scores.csv` (copied by `scripts/build_faers_cohort.py`).
+
+## Downstream use
+
+- Used to compute case-level anticholinergic burden in `04_processed/acb_by_case.csv`.

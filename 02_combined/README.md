@@ -1,10 +1,7 @@
 # 02_combined
 
-Purpose: optional storage for full combined FAERS tables.
+Intermediate combine/archive area for large FAERS tables.
 
-Files
-- This folder is currently reserved and may remain empty during compact runs.
+## Role in analysis
 
-How it connects
-- The active workflow does not require this folder.
-- Keep it only if you want archived full-table combines outside the compact pipeline.
+- Not required for standard downstream analysis generation.

@@ -1,0 +1,19 @@
+Final poster figures (unannotated):
+- final/drug_cooccurrence_network.png
+- final/shap_beeswarm.png
+- final/cardiac_risk_roc.png
+- final/logistic_odds_ratios.png
+- final/acb_by_age_group.png
+
+Move these to appendix only:
+- age_histogram.png
+- age_qq_plot.png
+- acb_with_dph_histogram.png
+- acb_with_dph_qq_plot.png
+- acb_codrugs_only_histogram.png
+- acb_codrugs_only_qq_plot.png
+- codrug_count_histogram.png
+- codrug_count_qq_plot.png
+- severity_histogram.png
+- severity_qq_plot.png
+- overview_dashboard.png

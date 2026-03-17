@@ -1,13 +1,18 @@
 # data
 
-Purpose: FAERS source downloads and lookup inputs.
+Source FAERS inputs and lookup tables for cohort construction.
 
-Folders
-- faers_raw/: downloaded FAERS ZIP files.
-- faers_extracted/: extracted quarterly DEMO, DRUG, REAC, and OUTC text files.
-- faers_input/: placeholder inputs for standalone helper scripts.
-- lookups/: drug-name and ACB lookup tables used by the pipeline.
+## Subfolders
 
-How it connects
-- scripts/download_faers_data.py fills faers_raw and faers_extracted.
-- scripts/build_faers_cohort.py reads faers_extracted and lookups during cohort construction.
+- `faers_raw/`: downloaded FDA FAERS ZIP archives.
+- `faers_extracted/`: extracted quarterly text files (`DEMO`, `DRUG`, `REAC`, `OUTC`).
+- `lookups/`: lookup tables such as `acb_lookup.csv` and `drug_name_map.csv`.
+
+## How files are created
+
+- `scripts/download_faers_data.py` populates `faers_raw/` and `faers_extracted/`.
+- Lookup files are stored in `lookups/`.
+
+## How it is used next
+
+- `scripts/build_faers_cohort.py` reads `faers_extracted/` + `lookups/` to build filtered and processed cohorts.

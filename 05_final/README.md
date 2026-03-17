@@ -1,27 +1,26 @@
 # 05_final
 
-Purpose: final analysis-ready cohort table.
+Final analysis-ready cohort data.
 
-Files
-- cohort_analysis.csv: 211 rows × 14 columns — one row per confirmed adolescent diphenhydramine case.
+## Produced by
 
-Columns
-- PRIMARYID: unique case identifier
-- AGE: patient age in years (13–19)
-- SEX: reported sex
-- EVENT_DT: adverse event date
-- OCCR_COUNTRY: reporting country
-- n_codrugs: number of co-administered drugs
-- total_acb_with_dph: total anticholinergic burden score including diphenhydramine
-- total_acb_codrugs_only: total ACB score for co-drugs only (excluding diphenhydramine)
-- cardiac_any: flag — any cardiac outcome present (Tier 1 or Tier 2)
-- cardiac_tier1: flag — QT-related signal (QT prolonged, QT interval abnormal, Long QT syndrome)
-- cardiac_tier2: flag — serious cardiac event (Torsade de pointes, VT, VFib, Cardiac arrest)
-- max_severity: maximum outcome severity code for the case
-- YEAR: year of adverse event
-- age_group: categorical age group (derived)
-- pre_post_warning: indicator relative to FDA label update timing
+- `scripts/build_faers_cohort.py`
 
-How it connects
-- scripts/build_faers_cohort.py writes this file from 03_filtered and 04_processed inputs.
-- 06_analysis/build_analysis_outputs.py reads this file to create all manuscript tables, figures, and summaries.
+## Main file
+
+- `cohort_analysis.csv`
+
+## Analysis-critical columns
+
+- `PRIMARYID`: unique FAERS case identifier.
+- `AGE`, `SEX`, `EVENT_DT`, `OCCR_COUNTRY`: core demographics/report metadata.
+- `n_codrugs`: number of concomitant co-medications.
+- `total_acb_with_dph`: total anticholinergic burden including diphenhydramine.
+- `total_acb_codrugs_only`: anticholinergic burden from co-medications only.
+- `cardiac_any`, `cardiac_tier1`, `cardiac_tier2`: cardiac toxicity indicators.
+- `max_severity`: maximum severity indicator for the case.
+- `YEAR`, `age_group`, `pre_post_warning`: derived analysis fields.
+
+## Downstream use
+
+- Input to `06_analysis/build_analysis_outputs.py` and `06_analysis/build_analysis_outputs.R`.

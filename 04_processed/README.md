@@ -1,11 +1,16 @@
 # 04_processed
 
-Purpose: processed case-level features derived from the confirmed diphenhydramine cohort.
+Processed case-level features used to build the final analysis dataset.
 
-Files
-- dph_drug_normalized.csv: confirmed DPH DRUG rows with RxNorm-based generic-name normalization.
-- acb_by_case.csv: case-level co-drug count and anticholinergic burden summary.
+## Produced by
 
-How it connects
-- scripts/build_faers_cohort.py writes both files after filtering the DPH cohort.
-- 05_final/cohort_analysis.csv merges these processed features with DEMO, REAC, and OUTC summaries.
+- `scripts/build_faers_cohort.py`
+
+## Core outputs
+
+- `dph_drug_normalized.csv`
+- `acb_by_case.csv`
+
+## Downstream use
+
+- Merged into `05_final/cohort_analysis.csv`.

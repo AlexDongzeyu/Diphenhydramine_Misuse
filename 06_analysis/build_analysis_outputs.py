@@ -18,6 +18,17 @@ from scipy.stats import shapiro, mannwhitneyu, kruskal, spearmanr
 import scikit_posthocs as sp
 import statsmodels.formula.api as smf
 from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.calibration import CalibrationDisplay
+
+try:
+    import shap
+except Exception:  # pragma: no cover - optional dependency for explainability export
+    shap = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +55,10 @@ FILE_NAMES = {
     "table_logit": "logistic_model_full.csv",
     "table_fit": "logistic_model_fit.csv",
     "table_predictions": "logistic_model_predictions.csv",
+    "table_cv_predictions": "model_predictions_cv.csv",
+    "table_cv_metrics": "model_cv_metrics.csv",
+    "table_modeling_n": "modeling_sample_size.csv",
+    "table_p_values_bh": "p_values_bh.csv",
     "summary": "results_summary.md",
     "metadata": "results_metadata.json",
 }
@@ -77,6 +92,45 @@ PALETTE = {
     "slate": "#334155",
     "bg": "#f8fafc",
 }
+
+HUMAN_LABELS = {
+    "AGE": "Patient age (years)",
+    "total_acb_with_dph": "Total anticholinergic burden (including diphenhydramine)",
+    "total_acb_codrugs_only": "Total anticholinergic burden from co-medications",
+    "n_codrugs": "Number of concomitant co-medications",
+    "max_severity": "Maximum reported case severity",
+    "cardiac_any": "Cardiac toxicity outcome (yes/no)",
+    "pre_post_warning": "Regulatory warning period (pre/post)",
+    "age_group": "Age group",
+    "Intercept": "Model intercept",
+}
+
+# Global Youreka-style defaults so all matplotlib/seaborn charts remain consistent.
+sns.set_theme(
+    style="whitegrid",
+    rc={
+        "axes.facecolor": "#ffffff",
+        "figure.facecolor": PALETTE["bg"],
+        "axes.titleweight": "bold",
+        "axes.labelweight": "bold",
+        "axes.labelsize": 12,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "grid.color": "#e2e8f0",
+    },
+)
+
+
+def save_figure(fig: plt.Figure, path: Path, dpi: int = 220) -> None:
+    """Save figures with consistent margins/background to avoid clipped labels."""
+    fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=0.16, facecolor="white", edgecolor="none")
+
+
+def human_label(name: str) -> str:
+    """Convert code-style column names to publication-ready labels."""
+    if name in HUMAN_LABELS:
+        return HUMAN_LABELS[name]
+    return name.replace("_", " ").strip().capitalize()
 
 
 def p_stars(p: float) -> str:
@@ -174,20 +228,20 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
 
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.hist(s, bins=15, color="#4C78A8", edgecolor="white")
-        ax.set_title(f"Histogram: {col}")
-        ax.set_xlabel(col)
+        ax.set_title(f"Histogram: {human_label(col)}")
+        ax.set_xlabel(human_label(col))
         ax.set_ylabel("Count")
         fig.tight_layout()
-        fig.savefig(FIG_DIR / HISTOGRAM_NAMES[col], dpi=200)
+        save_figure(fig, FIG_DIR / HISTOGRAM_NAMES[col], dpi=200)
         plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(5, 5))
         # Use scipy's probability plot to visualize normality assumptions.
         from scipy import stats
         stats.probplot(s, dist="norm", plot=ax)
-        ax.set_title(f"Q-Q: {col}")
+        ax.set_title(f"Q-Q: {human_label(col)}")
         fig.tight_layout()
-        fig.savefig(FIG_DIR / QQ_NAMES[col], dpi=200)
+        save_figure(fig, FIG_DIR / QQ_NAMES[col], dpi=200)
         plt.close(fig)
 
     out = pd.DataFrame(rows)
@@ -255,10 +309,10 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
                 pair_y *= 1.06
 
     ax.set_title("Total ACB burden across age groups", color=PALETTE["blue"], fontweight="bold")
-    ax.set_xlabel("Age group")
-    ax.set_ylabel("Total ACB (with DPH)")
+    ax.set_xlabel(human_label("age_group"))
+    ax.set_ylabel(human_label("total_acb_with_dph"))
     fig.tight_layout()
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_age_group"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_age_group"], dpi=220)
     plt.close(fig)
 
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
@@ -274,11 +328,11 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         line_kws={"color": PALETTE["orange"], "lw": 2.5},
         ax=ax,
     )
-    ax.set_title(f"ACB burden versus case severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
-    ax.set_xlabel("Total ACB (co-drugs only)")
-    ax.set_ylabel("Max severity")
+    ax.set_title(f"Anticholinergic burden versus case severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
+    ax.set_xlabel(human_label("total_acb_codrugs_only"))
+    ax.set_ylabel(human_label("max_severity"))
     fig.tight_layout()
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_severity"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_severity"], dpi=220)
     plt.close(fig)
 
     out = pd.DataFrame(rows)
@@ -344,6 +398,116 @@ def fit_logit(df: pd.DataFrame):
         return model, out, fit_stats, pd.DataFrame({"PRIMARYID": df["PRIMARYID"], "cardiac_any": df["cardiac_any"], "pred_prob": pred_prob})
 
 
+def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
+    """Build strict out-of-fold probabilities, calibration plots, and SHAP export artifacts."""
+    features = ["AGE", "total_acb_codrugs_only", "n_codrugs"]
+    model_cols = features + ["cardiac_any", "PRIMARYID"]
+
+    # Explicit missing-data handling avoids sklearn crashes and documents final N.
+    df_model = df.loc[:, model_cols].dropna().copy()
+    dropped_rows = int(df.shape[0] - df_model.shape[0])
+    modeling_n = {
+        "n_total": int(df.shape[0]),
+        "n_model": int(df_model.shape[0]),
+        "n_dropped_missing": dropped_rows,
+    }
+    pd.DataFrame([modeling_n]).to_csv(TAB_DIR / FILE_NAMES["table_modeling_n"], index=False)
+
+    X_df = df_model.loc[:, features].copy()
+    X = X_df.values
+    y = df_model["cardiac_any"].astype(int).values
+
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    rf_model = RandomForestClassifier(n_estimators=500, class_weight="balanced", random_state=42)
+    lr_model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(class_weight="balanced", max_iter=1000, random_state=42)),
+    ])
+
+    # Strict out-of-fold probabilities prevent data leakage in performance estimates.
+    lr_prob = cross_val_predict(lr_model, X, y, cv=cv, method="predict_proba")[:, 1]
+    rf_prob = cross_val_predict(rf_model, X, y, cv=cv, method="predict_proba")[:, 1]
+
+    pred_df = pd.DataFrame({
+        "PRIMARYID": df_model["PRIMARYID"].astype(str).values,
+        "cardiac_any": y,
+        "lr_prob": lr_prob,
+        "rf_prob": rf_prob,
+    })
+    pred_df.to_csv(TAB_DIR / FILE_NAMES["table_cv_predictions"], index=False)
+
+    auc_lr = roc_auc_score(y, lr_prob)
+    auc_rf = roc_auc_score(y, rf_prob)
+    metrics = pd.DataFrame([
+        {"model": "logistic_regression_cv", "auc": float(auc_lr), "n": int(len(y))},
+        {"model": "random_forest_cv", "auc": float(auc_rf), "n": int(len(y))},
+    ])
+    metrics.to_csv(TAB_DIR / FILE_NAMES["table_cv_metrics"], index=False)
+
+    fig, ax = plt.subplots(figsize=(7.0, 5.5))
+    CalibrationDisplay.from_predictions(y, lr_prob, n_bins=5, name="Logistic (OOF)", ax=ax)
+    CalibrationDisplay.from_predictions(y, rf_prob, n_bins=5, name="Random Forest (OOF)", ax=ax)
+    ax.set_title("Calibration curves (5-bin OOF probabilities)", color=PALETTE["blue"], fontweight="bold")
+    fig.tight_layout()
+    save_figure(fig, FIG_DIR / "calibration_curve_cv.png", dpi=220)
+    save_figure(fig, FIG_DIR / "calibration_curve.png", dpi=300)
+    plt.close(fig)
+
+    # This model is strictly for SHAP interpretability. All AUC metrics come from CV above.
+    if shap is not None:
+        rf_model.fit(X_df, y)
+        explainer = shap.TreeExplainer(rf_model)
+        shap_values = explainer.shap_values(X_df)
+        if isinstance(shap_values, list) and len(shap_values) > 1:
+            shap_for_plot = shap_values[1]
+        elif isinstance(shap_values, np.ndarray) and shap_values.ndim == 3:
+            # Newer SHAP versions may return (n_samples, n_features, n_classes).
+            shap_for_plot = shap_values[:, :, 1]
+        else:
+            shap_for_plot = shap_values
+
+        # Display publication-ready feature names on SHAP outputs.
+        X_display = X_df.rename(columns={c: human_label(c) for c in X_df.columns})
+        plt.figure(figsize=(11, 6.5))
+        shap.summary_plot(shap_for_plot, X_display, show=False, plot_size=(11, 6.5))
+        fig_shap = plt.gcf()
+        fig_shap.subplots_adjust(left=0.28, right=0.98, top=0.93, bottom=0.18)
+        save_figure(fig_shap, FIG_DIR / "shap_beeswarm.png", dpi=300)
+        save_figure(fig_shap, FIG_DIR / "shap_beeswarm_final.png", dpi=300)
+        plt.close()
+    else:
+        print("SHAP is not installed; skipping SHAP beeswarm export.")
+
+    return pred_df, metrics, modeling_n
+
+
+def save_bh_table(tests: pd.DataFrame) -> pd.DataFrame:
+    """Create a BH-adjusted p-value table for Python-native tests (R adds DeLong later)."""
+
+    def bh_adjust(p_values: pd.Series) -> pd.Series:
+        vals = p_values.astype(float).values
+        n = len(vals)
+        order = np.argsort(vals)
+        ranked = vals[order]
+        adjusted = np.empty(n, dtype=float)
+        min_so_far = 1.0
+        for i in range(n - 1, -1, -1):
+            rank = i + 1
+            val = ranked[i] * n / rank
+            min_so_far = min(min_so_far, val)
+            adjusted[i] = min_so_far
+        out = np.empty(n, dtype=float)
+        out[order] = np.clip(adjusted, 0.0, 1.0)
+        return pd.Series(out, index=p_values.index)
+
+    p_tbl = tests.loc[:, ["analysis", "p_value"]].copy()
+    p_tbl = p_tbl.rename(columns={"analysis": "test_name", "p_value": "p_raw"})
+    p_tbl["p_bh"] = bh_adjust(p_tbl["p_raw"])
+    p_tbl["bh_significant_0_05"] = p_tbl["p_bh"] < 0.05
+    p_tbl.to_csv(TAB_DIR / FILE_NAMES["table_p_values_bh"], index=False)
+    return p_tbl
+
+
 def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     """Run logistic analysis, save model outputs, and render forest/ROC plots."""
     fit_rows = []
@@ -364,12 +528,14 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     ax.scatter(forest_df["OR"], y, color=PALETTE["orange"], s=55, zorder=3, edgecolor="white", linewidth=0.8)
     ax.axvline(1.0, color="black", ls="--", lw=1)
     ax.set_yticks(y)
-    ax.set_yticklabels(forest_df["term"])
+    ax.set_yticklabels([human_label(term) for term in forest_df["term"]])
     ax.set_xscale("log")
     ax.set_xlabel("Odds Ratio (log scale)")
+    ax.set_ylabel("Clinical predictor")
     ax.set_title("Adjusted odds ratios for cardiac toxicity", color=PALETTE["blue"], fontweight="bold")
-    fig.subplots_adjust(left=0.34, right=0.98, top=0.90, bottom=0.12)
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_forest"], dpi=220)
+    ax.grid(axis="x", alpha=0.35)
+    fig.subplots_adjust(left=0.38, right=0.98, top=0.90, bottom=0.18)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"], dpi=220)
     plt.close(fig)
 
     roc_df = pred_df.dropna(subset=["pred_prob"]).copy()
@@ -385,7 +551,7 @@ def logistic_and_forest(df: pd.DataFrame) -> pd.DataFrame:
     ax.set_title("ROC curve for the cardiac risk model", color=PALETTE["blue"], fontweight="bold")
     ax.legend(loc="lower right", frameon=True)
     fig.tight_layout()
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_roc"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"], dpi=220)
     plt.close(fig)
 
     pd.DataFrame(fit_rows).to_csv(TAB_DIR / FILE_NAMES["table_fit"], index=False)
@@ -398,10 +564,10 @@ def plot_flowchart(counts: dict[str, int]) -> None:
     ax.axis("off")
 
     boxes = [
-        (0.1, 0.80, 0.8, 0.12, f"DEMO teens (unique PRIMARYID): {counts['DEMO_teens_unique']:,}"),
-        (0.1, 0.62, 0.8, 0.12, f"DRUG teens (unique PRIMARYID): {counts['DRUG_teens_unique']:,}"),
+        (0.1, 0.80, 0.8, 0.12, f"DEMO teen reports (unique case IDs): {counts['DEMO_teens_unique']:,}"),
+        (0.1, 0.62, 0.8, 0.12, f"DRUG teen reports (unique case IDs): {counts['DRUG_teens_unique']:,}"),
         (0.1, 0.44, 0.8, 0.12, f"Confirmed DPH cohort: {counts['DPH_confirmed_unique']:,}"),
-        (0.1, 0.26, 0.8, 0.12, f"Final analysis rows: {counts['Final_rows']:,} (unique: {counts['Final_unique_PRIMARYID']:,})"),
+        (0.1, 0.26, 0.8, 0.12, f"Final analysis records: {counts['Final_rows']:,} (unique case IDs: {counts['Final_unique_PRIMARYID']:,})"),
     ]
 
     for (x, y, w, h, text) in boxes:
@@ -414,11 +580,18 @@ def plot_flowchart(counts: dict[str, int]) -> None:
 
     ax.set_title("Cohort flow summary", fontsize=12, color=PALETTE["blue"], fontweight="bold")
     fig.tight_layout()
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_flow"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_flow"], dpi=220)
     plt.close(fig)
 
 
-def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame, fit: pd.DataFrame) -> None:
+def save_summary(
+    counts: dict[str, int],
+    norm: pd.DataFrame,
+    tests: pd.DataFrame,
+    fit: pd.DataFrame,
+    cv_metrics: pd.DataFrame,
+    modeling_n: dict[str, int],
+) -> None:
     """Write a concise markdown summary of counts, tests, and model fit statistics."""
     lines = [
         "# Analysis Results Summary",
@@ -442,6 +615,15 @@ def save_summary(counts: dict[str, int], norm: pd.DataFrame, tests: pd.DataFrame
     lines.append("## Logistic model fit")
     for row in fit.itertuples(index=False):
         lines.append(f"- {row.model}: n={row.n}, pseudo_r2={row.pseudo_r2_mcfadden:.4f}, AIC={row.aic:.2f}, AUC={row.auc:.3f}")
+
+    lines.append("")
+    lines.append("## CV model performance (leak-free out-of-fold)")
+    lines.append(
+        f"- Modeling sample: n_model={modeling_n['n_model']} / n_total={modeling_n['n_total']} "
+        f"(dropped_missing={modeling_n['n_dropped_missing']})"
+    )
+    for row in cv_metrics.itertuples(index=False):
+        lines.append(f"- {row.model}: AUC={row.auc:.3f}")
 
     (OUT_DIR / FILE_NAMES["summary"]).write_text("\n".join(lines), encoding="utf-8")
 
@@ -467,24 +649,27 @@ def make_dashboard() -> None:
         ax.set_title(title, fontsize=12, fontweight="bold", color=PALETTE["blue"], pad=10)
 
     fig.suptitle("Adolescent diphenhydramine FAERS results overview", fontsize=15, fontweight="bold", color=PALETTE["blue"])
-    fig.savefig(FIG_DIR / FILE_NAMES["figure_dashboard"], dpi=240)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_dashboard"], dpi=240)
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    # Set a consistent visual style before any plot is created.
-    sns.set_theme(style="whitegrid", rc={"axes.facecolor": "#ffffff", "figure.facecolor": PALETTE["bg"]})
-
+    # 1) Build flow/count context and load analysis-ready dataset.
     counts = flow_counts()
     plot_flowchart(counts)
 
     df = prepare_df()
+
+    # 2) Generate core descriptive, inferential, and predictive outputs.
     build_descriptive_table(df)
     norm = normality_checks(df)
     tests = analysis_a_b_c(df)
     fit = logistic_and_forest(df)
+    _, cv_metrics, modeling_n = run_cv_models(df)
+    save_bh_table(tests)
 
-    save_summary(counts, norm, tests, fit)
+    # 3) Write summaries and composite dashboard for reporting.
+    save_summary(counts, norm, tests, fit, cv_metrics, modeling_n)
     make_dashboard()
 
     # Save lightweight metadata so downstream reports can verify input/version context.

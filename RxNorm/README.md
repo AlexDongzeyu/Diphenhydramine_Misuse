@@ -1,9 +1,13 @@
 # RxNorm
 
-Purpose: RxNorm release files used for generic-name normalization.
+## What this folder is
 
-Folders
-- RxNorm_full_prescribe_03022026/: source release used by the current pipeline.
+RxNorm source release files used for ingredient-level drug name normalization.
 
-How it connects
-- scripts/build_faers_cohort.py reads RXNCONSO.RRF from this release to map FAERS drug names to RxNorm ingredients.
+## Required file for current pipeline
+
+- `RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF`
+
+## How it is used
+
+- `scripts/build_faers_cohort.py` reads `RXNCONSO.RRF` to map FAERS drug names to normalized generic/ingredient names in `04_processed/dph_drug_normalized.csv`.

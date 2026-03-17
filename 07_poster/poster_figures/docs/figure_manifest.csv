@@ -1,0 +1,23 @@
+file,type,source,notes
+final/drug_cooccurrence_network.png,analysis_core,06_analysis\figures\drug_cooccurrence_network.png,Poster all-star (unannotated)
+final/shap_beeswarm.png,analysis_core,06_analysis\figures\shap_beeswarm.png,Poster all-star (unannotated)
+final/cardiac_risk_roc.png,analysis_core,06_analysis\figures\cardiac_risk_roc.png,Poster all-star (unannotated)
+final/logistic_odds_ratios.png,analysis_core,06_analysis\figures\logistic_odds_ratios.png,Poster all-star (unannotated)
+final/acb_by_age_group.png,analysis_core,06_analysis\figures\acb_by_age_group.png,Poster all-star (unannotated)
+diagnostics/age_histogram.png,appendix_only,06_analysis\figures\age_histogram.png,Diagnostic/manuscript appendix
+diagnostics/age_qq_plot.png,appendix_only,06_analysis\figures\age_qq_plot.png,Diagnostic/manuscript appendix
+diagnostics/acb_with_dph_histogram.png,appendix_only,06_analysis\figures\acb_with_dph_histogram.png,Diagnostic/manuscript appendix
+diagnostics/acb_with_dph_qq_plot.png,appendix_only,06_analysis\figures\acb_with_dph_qq_plot.png,Diagnostic/manuscript appendix
+diagnostics/acb_codrugs_only_histogram.png,appendix_only,06_analysis\figures\acb_codrugs_only_histogram.png,Diagnostic/manuscript appendix
+diagnostics/acb_codrugs_only_qq_plot.png,appendix_only,06_analysis\figures\acb_codrugs_only_qq_plot.png,Diagnostic/manuscript appendix
+diagnostics/codrug_count_histogram.png,appendix_only,06_analysis\figures\codrug_count_histogram.png,Diagnostic/manuscript appendix
+diagnostics/codrug_count_qq_plot.png,appendix_only,06_analysis\figures\codrug_count_qq_plot.png,Diagnostic/manuscript appendix
+diagnostics/severity_histogram.png,appendix_only,06_analysis\figures\severity_histogram.png,Diagnostic/manuscript appendix
+diagnostics/severity_qq_plot.png,appendix_only,06_analysis\figures\severity_qq_plot.png,Diagnostic/manuscript appendix
+diagnostics/overview_dashboard.png,appendix_only,06_analysis\figures\overview_dashboard.png,Diagnostic/manuscript appendix
+final/drug_cooccurrence_network.png,analysis_core,copied from figures,Unannotated original
+final/shap_beeswarm.png,analysis_core,copied from figures,Unannotated original
+final/cardiac_risk_roc.png,analysis_core,copied from figures,Unannotated original
+final/logistic_odds_ratios.png,analysis_core,copied from figures,Unannotated original
+final/acb_by_age_group.png,analysis_core,copied from figures,Unannotated original
+docs/layout_blueprint.png,layout_guide,generated,3-column arrangement guide for final poster assembly
