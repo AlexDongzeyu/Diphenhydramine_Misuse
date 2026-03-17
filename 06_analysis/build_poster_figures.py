@@ -131,6 +131,39 @@ def copy_curated_figures() -> list[tuple[str, str, str, str]]:
     return rows
 
 
+def polish_final_figure(path: Path) -> None:
+    """Re-export each final image with consistent white margins and poster-friendly scale."""
+    if not path.exists():
+        return
+
+    img = plt.imread(path)
+    if img.ndim < 2:
+        return
+
+    # Trim existing large whitespace so we can reapply a balanced margin.
+    img = trim_background(img, tolerance=0.015, pad=6)
+
+    h, w = img.shape[:2]
+    if h <= 0 or w <= 0:
+        return
+
+    aspect = w / h
+    max_w, max_h = 12.0, 7.5
+    plot_w = max_w
+    plot_h = plot_w / aspect
+    if plot_h > max_h:
+        plot_h = max_h
+        plot_w = plot_h * aspect
+
+    fig = plt.figure(figsize=(plot_w + 0.9, plot_h + 0.9), facecolor="white")
+    # Keep a balanced margin so figures are neither cramped nor floating.
+    ax = fig.add_axes([0.06, 0.06, 0.88, 0.88])
+    ax.imshow(img)
+    ax.axis("off")
+    fig.savefig(path, dpi=320, bbox_inches="tight", pad_inches=0.12, facecolor="white")
+    plt.close(fig)
+
+
 def trim_background(img: np.ndarray, tolerance: float = 0.03, pad: int = 10) -> np.ndarray:
     """Trim large blank margins using the top-left pixel as background reference."""
     if img.ndim < 2:
@@ -339,6 +372,12 @@ def main() -> None:
 
     # Stage 2: copy finalized figure assets from analysis outputs.
     rows = copy_curated_figures()
+
+    # Stage 2b: normalize figure canvas scale and margins for poster placement.
+    for name in KEEP_FIGURES:
+        polish_final_figure(FINAL_DIR / name)
+    for name in APPENDIX_FIGURES:
+        polish_final_figure(APPENDIX_DIR / name)
 
     blueprint = DOCS_DIR / "layout_blueprint.png"
 

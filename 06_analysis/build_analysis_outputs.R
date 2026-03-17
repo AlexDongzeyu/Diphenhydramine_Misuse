@@ -25,12 +25,16 @@ youreka_colors <- c(
 )
 
 theme_set(
-  theme_gray(base_size = 12) +
+  theme_minimal(base_size = 13) +
     theme(
       plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 16),
       plot.subtitle = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 11),
       axis.title = element_text(color = "#2f2f2f", face = "bold"),
-      legend.title = element_text(face = "bold")
+      legend.title = element_text(face = "bold"),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = "#e5e7eb", linewidth = 0.55),
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background = element_rect(fill = "white", color = NA)
     )
 )
 
@@ -310,7 +314,7 @@ p1 <- ggplot(df, aes(x = factor(cardiac_any), y = total_acb_codrugs_only, fill =
     y = "Total anticholinergic burden from co-medications"
   ) +
   theme(legend.position = "none")
-ggsave(file.path(fig_dir, "acb_by_cardiac_outcome.png"), p1, width = 7, height = 5, dpi = 220)
+ggsave(file.path(fig_dir, "acb_by_cardiac_outcome.png"), p1, width = 8.2, height = 5.8, dpi = 260)
 
 p_stars <- function(p) {
   if (is.na(p)) return("ns")
@@ -324,23 +328,28 @@ df_age <- df %>%
   filter(!is.na(age_group), !is.na(total_acb_codrugs_only)) %>%
   mutate(age_group = factor(as.character(age_group), levels = c("13-15", "16-17", "18-19")))
 
-ymax_age <- max(df_age$total_acb_codrugs_only, na.rm = TRUE)
-label_y <- ymax_age * 0.84
-bracket_y <- ymax_age * 0.94
+y_cap_age <- as.numeric(quantile(df_age$total_acb_codrugs_only, probs = 0.99, na.rm = TRUE))
+if (!is.finite(y_cap_age) || y_cap_age <= 0) {
+  y_cap_age <- max(df_age$total_acb_codrugs_only, na.rm = TRUE)
+}
+
+label_y <- y_cap_age * 0.84
+bracket_y <- y_cap_age * 0.94
 kw_label <- sprintf("Kruskal p=%.3g %s", kw$p.value, p_stars(kw$p.value))
 
 p2 <- ggplot(df_age, aes(x = age_group, y = total_acb_codrugs_only, fill = age_group)) +
-  geom_boxplot(width = 0.55, alpha = 0.65, outlier.shape = 1, outlier.alpha = 0.55) +
-  geom_jitter(width = 0.16, alpha = 0.35, size = 1.5, color = "gray40") +
+  geom_violin(width = 0.62, alpha = 0.18, color = "gray35", linewidth = 0.5, trim = FALSE) +
+  geom_boxplot(width = 0.30, alpha = 0.72, outlier.shape = NA, linewidth = 0.8) +
+  geom_jitter(width = 0.14, alpha = 0.10, size = 1.0, color = "gray35") +
   scale_fill_manual(values = c("13-15" = youreka_colors[["blue_light"]], "16-17" = youreka_colors[["orange_light"]], "18-19" = youreka_colors[["mint_light"]])) +
+  coord_cartesian(ylim = c(0, y_cap_age * 1.06)) +
   labs(
     title = "Co-medication ACB by Age Group",
-    subtitle = "Total co-medication anticholinergic burden across age groups",
+    subtitle = "Display range capped at 99th percentile for readability; statistics use full data",
     x = "Age group",
     y = "Total ACB (co-medications only)"
   ) +
   annotate("text", x = 2, y = label_y, label = kw_label, color = "#b91c1c", fontface = "bold", size = 4.4) +
-  coord_cartesian(ylim = c(min(0, min(df_age$total_acb_codrugs_only, na.rm = TRUE)), ymax_age * 1.10)) +
   theme(
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 17),
@@ -348,14 +357,15 @@ p2 <- ggplot(df_age, aes(x = age_group, y = total_acb_codrugs_only, fill = age_g
   )
 
 if (!is.na(kw$p.value) && kw$p.value < 0.05) {
+  bracket_y <- y_cap_age * 0.94
   p2 <- p2 +
     annotate("segment", x = 2, xend = 3, y = bracket_y, yend = bracket_y, color = "gray30", linewidth = 0.6) +
-    annotate("segment", x = 2, xend = 2, y = bracket_y, yend = bracket_y - ymax_age * 0.015, color = "gray30", linewidth = 0.6) +
-    annotate("segment", x = 3, xend = 3, y = bracket_y, yend = bracket_y - ymax_age * 0.015, color = "gray30", linewidth = 0.6) +
-    annotate("text", x = 2.5, y = bracket_y + ymax_age * 0.03, label = p_stars(kw$p.value), color = "#b91c1c", fontface = "bold", size = 4.4)
+    annotate("segment", x = 2, xend = 2, y = bracket_y, yend = bracket_y - y_cap_age * 0.02, color = "gray30", linewidth = 0.6) +
+    annotate("segment", x = 3, xend = 3, y = bracket_y, yend = bracket_y - y_cap_age * 0.02, color = "gray30", linewidth = 0.6) +
+    annotate("text", x = 2.5, y = bracket_y + y_cap_age * 0.03, label = p_stars(kw$p.value), color = "#b91c1c", fontface = "bold", size = 4.4)
 }
 
-ggsave(file.path(fig_dir, "acb_by_age_group.png"), p2, width = 7, height = 5, dpi = 220)
+ggsave(file.path(fig_dir, "acb_by_age_group.png"), p2, width = 8.4, height = 6.2, dpi = 260)
 
 p3 <- ggplot(df, aes(x = total_acb_codrugs_only, y = max_severity)) +
   geom_point(color = youreka_colors[["teal"]], alpha = 0.65, size = 1.8) +
@@ -366,7 +376,7 @@ p3 <- ggplot(df, aes(x = total_acb_codrugs_only, y = max_severity)) +
     x = "Total anticholinergic burden from co-medications",
     y = "Maximum reported case severity"
   )
-ggsave(file.path(fig_dir, "acb_vs_severity.png"), p3, width = 7, height = 5, dpi = 220)
+ggsave(file.path(fig_dir, "acb_vs_severity.png"), p3, width = 8.2, height = 5.8, dpi = 260)
 
 # Phase 5 figure with raw p-value, BH status, and rank-biserial effect size.
 sex_bh_status <- p_values_tbl %>%
@@ -379,29 +389,34 @@ if (length(sex_bh_status) == 0) {
 
 if (nrow(sex_df) > 0 && length(unique(sex_df$SEX)) == 2) {
   sex_caption <- sprintf("Mann-Whitney p=%.3g | BH: %s | Rank-biserial r=%.3f", sex_p, sex_bh_status, sex_r)
+  y_cap_sex <- as.numeric(quantile(sex_df$total_acb_codrugs_only, probs = 0.99, na.rm = TRUE))
+  if (!is.finite(y_cap_sex) || y_cap_sex <= 0) {
+    y_cap_sex <- max(sex_df$total_acb_codrugs_only, na.rm = TRUE)
+  }
+
   p_sex <- ggplot(sex_df, aes(x = SEX, y = total_acb_codrugs_only, fill = SEX))
 
   if (has_introdataviz) {
-    p_sex <- p_sex + introdataviz::geom_split_violin(alpha = 0.7, trim = FALSE, color = "gray30")
+    p_sex <- p_sex + introdataviz::geom_split_violin(alpha = 0.22, trim = FALSE, color = "gray35")
   } else {
-    p_sex <- p_sex + geom_violin(trim = FALSE, alpha = 0.55, width = 0.9, color = "gray30")
+    p_sex <- p_sex + geom_violin(trim = FALSE, alpha = 0.22, width = 0.86, color = "gray35")
   }
 
   p_sex <- p_sex +
-    geom_boxplot(width = 0.12, outlier.shape = NA, alpha = 0.85) +
-    geom_jitter(width = 0.09, alpha = 0.2, size = 1.1) +
+    geom_boxplot(width = 0.16, outlier.shape = NA, alpha = 0.78, linewidth = 0.8) +
+    geom_jitter(width = 0.08, alpha = 0.10, size = 1.0, color = "gray35") +
     scale_fill_manual(values = c("F" = youreka_colors[["mint_light"]], "M" = youreka_colors[["blue_light"]])) +
-    annotate("text", x = 1.5, y = max(sex_df$total_acb_codrugs_only, na.rm = TRUE), label = sex_caption, vjust = -0.6, size = 4.0) +
+    coord_cartesian(ylim = c(0, y_cap_sex * 1.06)) +
     labs(
       title = "Sex-stratified anticholinergic burden (co-medications)",
-      subtitle = "Unknown sex excluded",
+      subtitle = paste("Unknown sex excluded |", sex_caption, "| display capped at 99th percentile"),
       x = "Sex",
       y = "Total anticholinergic burden from co-medications"
     ) +
     theme_classic(base_size = 12) +
     theme(legend.position = "none")
 
-  ggsave(file.path(fig_dir, "sex_stratified_acb_violin.png"), p_sex, width = 8, height = 5.5, dpi = 240)
+  ggsave(file.path(fig_dir, "sex_stratified_acb_violin.png"), p_sex, width = 8.8, height = 6.0, dpi = 280)
 }
 
 # Phase 4: Drug co-occurrence network analysis

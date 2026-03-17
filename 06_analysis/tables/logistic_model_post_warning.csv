@@ -1,2 +1,6 @@
-model,term,estimate,conf.low,conf.high,p.value,note
-post_warning,NA,NA,NA,NA,NA,Skipped: cardiac_any has <2 classes
+term,estimate,std.error,statistic,p.value,conf.low,conf.high,model,note
+(Intercept),0.005938627734196028,0.7828241237072746,-6.5484404966971885,5.814101356600583e-11,9.551584074334674e-4,0.02216855333145041,post_warning,"Used terms: total_acb_codrugs_only, age_group, n_codrugs"
+total_acb_codrugs_only,1.1152776476888113,0.18085862520820145,0.6032523202495653,0.54634084652083,0.7035647196660862,1.5370037354282569,post_warning,"Used terms: total_acb_codrugs_only, age_group, n_codrugs"
+age_group16-17,0.7986355582167107,0.9217147260361565,-0.2439481037917013,0.8072710129124494,0.10386080066080973,4.901550610969683,post_warning,"Used terms: total_acb_codrugs_only, age_group, n_codrugs"
+age_group18-19,1.024729167117467e-8,1696.5546061346365,-0.010843301080294682,0.9913484670173675,NA,1713834915284935e59,post_warning,"Used terms: total_acb_codrugs_only, age_group, n_codrugs"
+n_codrugs,1.076432532227005,0.07249093535826392,1.0160216891426743,0.3096190583141311,0.9079974961404583,1.2222736383660184,post_warning,"Used terms: total_acb_codrugs_only, age_group, n_codrugs"

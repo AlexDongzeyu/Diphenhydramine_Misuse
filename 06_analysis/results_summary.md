@@ -2,25 +2,25 @@
 
 ## Cohort
 - DEMO teens unique IDs: 217507
-- Confirmed DPH cohort: 211
-- Final analysis rows: 211
+- Confirmed DPH cohort: 3168
+- Final analysis rows: 3168
 
 ## Normality (Shapiro-Wilk)
-- AGE: p=2.92e-09 (non-normal)
-- total_acb_with_dph: p=4.85e-17 (non-normal)
-- total_acb_codrugs_only: p=1.91e-22 (non-normal)
-- n_codrugs: p=6.02e-17 (non-normal)
-- max_severity: p=4.07e-13 (non-normal)
+- AGE: p=9.23e-37 (non-normal)
+- total_acb_with_dph: p=4.85e-63 (non-normal)
+- total_acb_codrugs_only: p=1.92e-71 (non-normal)
+- n_codrugs: p=2.73e-60 (non-normal)
+- max_severity: p=3.59e-47 (non-normal)
 
 ## Core tests
-- A_mann_whitney_acb_vs_cardiac: statistic=1098, p=0.991 ns
-- B_kruskal_acb_vs_age_group: statistic=5.193, p=0.0745 ns
-- C_spearman_acb_vs_severity: statistic=0.1373, p=0.0463 *
+- A_mann_whitney_acb_vs_cardiac: statistic=3.758e+05, p=1.3e-06 ***
+- B_kruskal_acb_vs_age_group: statistic=19.52, p=5.76e-05 ***
+- C_spearman_acb_vs_severity: statistic=0.1424, p=8.06e-16 ***
 
 ## Logistic model fit
-- full: n=211, pseudo_r2=0.1244, AIC=83.65, AUC=0.753
+- full: n=3168, pseudo_r2=0.0294, AIC=1553.90, AUC=0.652
 
 ## CV model performance (leak-free out-of-fold)
-- Modeling sample: n_model=211 / n_total=211 (dropped_missing=0)
-- logistic_regression_cv: AUC=0.653
-- random_forest_cv: AUC=0.820
+- Modeling sample: n_model=3168 / n_total=3168 (dropped_missing=0)
+- logistic_regression_cv: AUC=0.640
+- random_forest_cv: AUC=0.769

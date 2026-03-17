@@ -141,6 +141,43 @@ def filter_csv_by_ids(input_csv: Path, out_csv: Path, id_set: set[str], chunksiz
             wrote_header = True
 
 
+def filter_csv_by_ids_keep_cols(
+    input_csv: Path,
+    out_csv: Path,
+    id_set: set[str],
+    chunksize: int,
+    keep_cols: list[str],
+) -> None:
+    """Filter a CSV by PRIMARYID while reading only required columns for robust parsing."""
+    if out_csv.exists():
+        out_csv.unlink()
+
+    keep_upper = [str(c).strip().upper() for c in keep_cols]
+    keep_set = set(keep_upper)
+    wrote_header = False
+
+    for chunk in pd.read_csv(
+        input_csv,
+        dtype=str,
+        chunksize=chunksize,
+        on_bad_lines="skip",
+        engine="c",
+        usecols=lambda c: str(c).strip().upper() in keep_set,
+        low_memory=False,
+    ):
+        c = normalize_columns(chunk)
+        for col in keep_upper:
+            if col not in c.columns:
+                c[col] = ""
+        c = c.loc[:, keep_upper]
+
+        ids = get_series_str(c, "PRIMARYID").str.strip()
+        filtered = c[ids.isin(id_set)]
+        if not filtered.empty:
+            filtered.to_csv(out_csv, mode="a", index=False, header=not wrote_header)
+            wrote_header = True
+
+
 def identify_dph_ids(drug_teens_csv: Path, chunksize: int) -> set[str]:
     """Identify confirmed diphenhydramine cases using name and role-code rules."""
     confirmed_ids: set[str] = set()
@@ -149,7 +186,9 @@ def identify_dph_ids(drug_teens_csv: Path, chunksize: int) -> set[str]:
         dtype=str,
         chunksize=chunksize,
         on_bad_lines="skip",
-        engine="python",
+        engine="c",
+        usecols=lambda c: str(c).strip().upper() in {"PRIMARYID", "DRUGNAME", "PROD_AI", "ROLE_COD"},
+        low_memory=False,
     ):
         c = normalize_columns(chunk)
         drugname = get_series_str(c, "DRUGNAME").str.upper().str.strip()
@@ -497,9 +536,28 @@ def main() -> None:
             for pid in sorted(confirmed_ids):
                 handle.write(f"{pid}\n")
 
-        filter_csv_by_ids(drug_teens, drug_dph, confirmed_ids, args.chunksize)
-        filter_csv_by_ids(reac_teens, reac_dph, confirmed_ids, args.chunksize)
-        filter_csv_by_ids(outc_teens, outc_dph, confirmed_ids, args.chunksize)
+        # Keep only required columns to avoid parser losses from schema drift across quarters.
+        filter_csv_by_ids_keep_cols(
+            drug_teens,
+            drug_dph,
+            confirmed_ids,
+            args.chunksize,
+            keep_cols=["PRIMARYID", "ROLE_COD", "DRUGNAME", "PROD_AI"],
+        )
+        filter_csv_by_ids_keep_cols(
+            reac_teens,
+            reac_dph,
+            confirmed_ids,
+            args.chunksize,
+            keep_cols=["PRIMARYID", "PT"],
+        )
+        filter_csv_by_ids_keep_cols(
+            outc_teens,
+            outc_dph,
+            confirmed_ids,
+            args.chunksize,
+            keep_cols=["PRIMARYID", "OUTC_COD"],
+        )
     else:
         if not teen_ids_txt.exists():
             raise FileNotFoundError("dph_confirmed_ids.txt is required when --start-phase=8")
