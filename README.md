@@ -1,160 +1,120 @@
 # Diphenhydramine Misuse Project (FAERS)
 
-This repository contains an end-to-end, reproducible workflow for studying adolescent diphenhydramine misuse in FAERS.
+This repository contains a full, reproducible FAERS pipeline built from raw quarterly files to final analysis figures.
 
 The central analysis question is:
 
-- How anticholinergic burden from co-medications relates to cardiac toxicity risk and case severity in confirmed teen diphenhydramine overdose reports.
+- How co-medication anticholinergic burden is associated with cardiac toxicity and overall severity in confirmed adolescent diphenhydramine overdose reports.
 
-The workflow transforms raw/extracted FAERS records into:
+### Step 0 - Raw inputs prepared
 
-- a clean final cohort table,
-- publication-style statistical outputs,
-- and a poster-ready figure package.
+We started with quarterly FAERS files in `data/faers_extracted/` (DEMO, DRUG, REAC, OUTC by quarter), lookup tables in `data/lookups/`, and RxNorm files in `RxNorm/RxNorm_full_prescribe_03022026/rrf/`.
 
-## End-to-End Process (01_raw to Final Figures)
+These three sources are the required inputs for cohort construction:
 
-### 01_raw — Pipeline lookup staging
+- FAERS quarterly case-level records,
+- anticholinergic burden lookup values,
+- and drug normalization vocabulary (RxNorm).
 
-Purpose:
+### Step 1 - Build the cohort foundation (`01_raw`, `02_combined`, `03_filtered`)
 
-- Store stable lookup copies used during feature engineering.
+The cohort build process is run by `scripts/build_faers_cohort.py`.
 
-Key content:
+What was done:
 
-- `acb/acb_scores.csv` (copied from lookup source data).
+- FAERS raw quarterly tables were read and harmonized across years.
+- The age filter was applied to isolate adolescent/teen records.
+- Diphenhydramine exposure was confirmed from drug tables.
+- Matched case IDs were used to keep only records tied to the confirmed cohort.
 
-Why this step matters:
+Where outputs were written:
 
-- It fixes lookup inputs for reproducible anticholinergic burden computation.
+- `01_raw/` stores stable staging lookup content used by the pipeline.
+- `02_combined/` is reserved for large intermediate combined tables when needed.
+- `03_filtered/` stores the first clean cohort-level outputs.
 
-### 02_combined — Large intermediate combine area
+Key outputs created in `03_filtered/`:
 
-Purpose:
+- `teen_demo_records.csv`
+- `teen_drug_records.csv`
+- `teen_reaction_records.csv`
+- `teen_outcome_records.csv`
+- `dph_confirmed_ids.txt`
+- `dph_drug_records.csv`
+- `dph_reaction_records.csv`
+- `dph_outcome_records.csv`
 
-- Hold large intermediate combined FAERS tables when needed.
+### Step 2 - Feature engineering (`04_processed`)
 
-How it is used now:
+After the confirmed teen diphenhydramine cohort was fixed, drug-level data were converted into case-level analysis features.
 
-- Standard downstream analysis can run without requiring this folder.
+What was done:
 
-### 03_filtered — Cohort filtering and diphenhydramine confirmation
+- Drug names were normalized to reduce spelling/format variation.
+- Co-medication counts were computed per case.
+- Anticholinergic burden was aggregated per case.
 
-Purpose:
+Outputs created in `04_processed/`:
 
-- Build the analysis cohort from extracted FAERS files by applying demographic and case filters.
+- `dph_drug_normalized.csv` (normalized drug naming table)
+- `acb_by_case.csv` (case-level burden and co-medication features)
 
-Main outputs:
+### Step 3 - Final modeling dataset (`05_final`)
 
-- Teen-level filtered tables:
-	- `teen_demo_records.csv`
-	- `teen_drug_records.csv`
-	- `teen_reaction_records.csv`
-	- `teen_outcome_records.csv`
-- Confirmed diphenhydramine cohort files:
-	- `dph_confirmed_ids.txt`
-	- `dph_drug_records.csv`
-	- `dph_reaction_records.csv`
-	- `dph_outcome_records.csv`
+Processed features were merged into one final analysis table.
 
-Why this step matters:
+What was done:
 
-- It defines the exact population and case set used by all downstream analyses.
+- Demographic, exposure, and outcome fields were aligned by case ID.
+- Modeling variables were standardized into one schema.
+- Pre/post warning-period indicator and outcome targets were finalized.
 
-### 04_processed — Drug normalization and case-level feature derivation
-
-Purpose:
-
-- Convert filtered drug data into analysis features.
-
-Main outputs:
-
-- `dph_drug_normalized.csv`: normalized/standardized drug names.
-- `acb_by_case.csv`: case-level anticholinergic burden and co-medication counts.
-
-Why this step matters:
-
-- It creates interpretable and model-ready predictors rather than raw text drug records.
-
-### 05_final — Final analysis dataset
-
-Purpose:
-
-- Assemble one analysis-ready table for all statistical modeling and figure generation.
-
-Main output:
+Output created in `05_final/`:
 
 - `cohort_analysis.csv`
 
-Typical columns include:
+This file is the single source used by both Python and R analyses.
 
-- patient/report context (`PRIMARYID`, `AGE`, `SEX`, `YEAR`, `age_group`),
-- burden/exposure features (`n_codrugs`, `total_acb_with_dph`, `total_acb_codrugs_only`),
-- outcomes (`cardiac_any`, `cardiac_tier1`, `cardiac_tier2`, `max_severity`),
-- period indicator (`pre_post_warning`).
+### Step 4 - Statistical analysis and diagnostics (`06_analysis`)
 
-Why this step matters:
+Two analysis scripts were used to generate the full quantitative evidence package.
 
-- It is the single source of truth for both Python and R analysis scripts.
+Scripts run:
 
-### 06_analysis — Statistical analysis and figure generation
+- `06_analysis/build_analysis_outputs.py`
+- `06_analysis/build_analysis_outputs.R`
 
-Purpose:
+What was done:
 
-- Produce all formal tables, metrics, and figures from `05_final/cohort_analysis.csv`.
+- Descriptive summaries were generated for cohort characterization.
+- Distribution checks and nonparametric tests were produced.
+- Logistic models were fit for cardiac and severity outcomes.
+- Cross-validation, ROC/AUC, calibration, and DeLong comparisons were computed.
+- Multiple-testing adjustment (BH) outputs were generated.
+- Network and subgroup outputs were generated for interpretation support.
 
-Scripts:
+Main result folders:
 
-- `build_analysis_outputs.py`: primary analysis engine.
-- `build_analysis_outputs.R`: complementary analyses and additional outputs.
+- `06_analysis/tables/`
+- `06_analysis/figures/`
 
-Representative table outputs (`06_analysis/tables/`):
+### Step 5 - Poster figure build (`07_poster`)
 
-- descriptive summaries,
-- normality and nonparametric test results,
-- logistic model outputs,
-- cross-validated model performance,
-- DeLong ROC comparison,
-- BH-adjusted p-value table,
-- network summaries,
-- sex-stratified effect-size results.
+Final presentation figures were built from analysis outputs with `06_analysis/build_poster_figures.py`.
 
-Representative figure outputs (`06_analysis/figures/`):
+What was done:
 
-- cohort flow,
-- age-group ACB comparison,
-- severity relationship,
-- logistic odds-ratio forest plot,
-- ROC and dual ROC,
-- calibration curves,
-- SHAP explainability beeswarm,
-- drug co-occurrence network,
-- subgroup/diagnostic plots.
+- Analysis figures were curated into a publication/presentation set.
+- Visual formatting and labeling were standardized for poster use.
+- Diagnostic/supporting visuals were kept separate from final poster assets.
 
-Why this step matters:
+Outputs:
 
-- It generates the complete evidence package used for interpretation, reporting, and poster construction.
+- Final poster figures: `07_poster/poster_figures/final/`
+- Diagnostics: `07_poster/poster_figures/diagnostics/`
+- Figure documentation/support: `07_poster/poster_figures/docs/`
 
-### 07_poster — Final figure curation for presentation
-
-Purpose:
-
-- Build the exact poster figure set from analysis outputs.
-
-Main output path:
-
-- `07_poster/poster_figures/final/`
-
-Supporting paths:
-
-- `07_poster/poster_figures/diagnostics/`
-- `07_poster/poster_figures/docs/`
-
-Why this step matters:
-
-- It separates final presentation figures from diagnostics and keeps poster assets reproducible.
-
-## Command Order
+## Run Order
 
 Run these commands in sequence:
 
@@ -165,10 +125,12 @@ Rscript 06_analysis/build_analysis_outputs.R
 python 06_analysis/build_poster_figures.py
 ```
 
+The commands above execute the same process summarized in Steps 1-5.
+
 ## Final Deliverables
 
-- `05_final/cohort_analysis.csv`: analysis-ready cohort dataset.
-- `06_analysis/tables/`: statistical tables for results reporting.
-- `06_analysis/figures/`: full analysis and diagnostic figure set.
-- `07_poster/poster_figures/final/`: final curated poster figures.
+- `05_final/cohort_analysis.csv`: single analysis-ready cohort dataset.
+- `06_analysis/tables/`: inferential and model result tables.
+- `06_analysis/figures/`: analysis and diagnostic figure outputs.
+- `07_poster/poster_figures/final/`: final curated figures for presentation.
 
