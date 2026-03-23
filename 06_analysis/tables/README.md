@@ -18,7 +18,8 @@ All generated statistical table outputs.
 - Hypothesis tests:
 	- `nonparametric_results.csv`
 	- `age_group_posthoc.csv`
-	- `p_values_bh.csv`
+	- `p_values_bh.csv` (R output)
+	- `p_values_bh_python_core.csv` (Python output)
 
 - Logistic model outputs:
 	- `logistic_model_full.csv`

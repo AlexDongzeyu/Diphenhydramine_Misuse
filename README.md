@@ -119,10 +119,23 @@ Outputs:
 Run these commands in sequence:
 
 ```powershell
-python scripts/build_faers_cohort.py --base-dir "." --extracted-root "data/faers_extracted" --rxnorm-rrf "RxNorm/RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF" --acb-csv "data/lookups/acb_lookup.csv" --chunksize 100000 --start-phase 6
+# Step 1: Build cohort (fresh run — processes all FAERS quarters from scratch)
+python scripts/build_faers_cohort.py --base-dir "." --extracted-root "data/faers_extracted" --rxnorm-rrf "RxNorm/RxNorm_full_prescribe_03022026/rrf/RXNCONSO.RRF" --acb-csv "data/lookups/acb_lookup.csv" --chunksize 100000
+
+# Step 2-4: Generate analysis outputs and poster figures
 python 06_analysis/build_analysis_outputs.py
 Rscript 06_analysis/build_analysis_outputs.R
 python 06_analysis/build_poster_figures.py
+```
+
+**Re-run shortcuts** (when cohort files in `03_filtered/` already exist):
+
+```powershell
+# Re-run from phase 6 — rebuilds DRUG/REAC/OUTC filters using existing teen_demo_records.csv
+python scripts/build_faers_cohort.py ... --start-phase 6
+
+# Re-run from phase 8 — rebuilds feature joins using existing confirmed DPH cohort files
+python scripts/build_faers_cohort.py ... --start-phase 8
 ```
 
 The commands above execute the same process summarized in Steps 1-5.

@@ -14,7 +14,6 @@ This folder is organized into:
 
 ## Key figure groups
 
-
 - Final deliverables (`final/`):
 	- `cohort_flow.png`
 	- `acb_by_age_group.png`
@@ -35,18 +34,15 @@ This folder is organized into:
 	- `cardiac_risk_roc.png`
 	- `overview_dashboard.png`
 
-
 - Model explainability and comparison (root):
 	- `shap_beeswarm.png`
 	- `calibration_curve_cv.png`
 	- `roc_dual.png`
 
-
 - Network and subgroup plots (root):
 	- `drug_cooccurrence_network.png`
 	- `acb_by_cardiac_outcome.png`
 	- `sex_stratified_acb_violin.png`
-
 
 - Distribution diagnostics (root):
 	- `age_histogram.png`, `age_qq_plot.png`
