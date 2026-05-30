@@ -5,12 +5,16 @@ runs descriptive and inferential statistics, fits a logistic model, and writes
 all outputs into 06_analysis/tables and 06_analysis/figures.
 """
 
-from pathlib import Path
 import json
+import shutil
+import time
+from itertools import combinations
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import networkx as nx
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch
 from matplotlib import patheffects
@@ -37,6 +41,8 @@ FILTERED = ROOT / "03_filtered"
 OUT_DIR = ROOT / "06_analysis"
 FIG_DIR = OUT_DIR / "figures"
 TAB_DIR = OUT_DIR / "tables"
+FINAL_FIG_DIR = FIG_DIR / "final"
+SUBMISSION_FIG_DIR = FIG_DIR / "submission"
 
 FILE_NAMES = {
     "demo": "teen_demo_records.csv",
@@ -80,17 +86,18 @@ QQ_NAMES = {
 }
 
 
-for path in [FIG_DIR, TAB_DIR]:
+for path in [FIG_DIR, TAB_DIR, FINAL_FIG_DIR, SUBMISSION_FIG_DIR]:
     path.mkdir(parents=True, exist_ok=True)
 
 
 PALETTE = {
-    "blue": "#1f4e79",
-    "teal": "#1f7a8c",
-    "orange": "#f59e0b",
-    "red": "#b91c1c",
-    "slate": "#334155",
-    "bg": "#f8fafc",
+    "blue": "#4C78A8",
+    "orange": "#D28E3D",
+    "gray": "#7F7F7F",
+    "light_blue": "#DCE6F2",
+    "light_orange": "#F2E1C8",
+    "light_gray": "#E6E6E6",
+    "black": "#000000",
 }
 
 HUMAN_LABELS = {
@@ -105,25 +112,61 @@ HUMAN_LABELS = {
     "Intercept": "Model intercept",
 }
 
-# Global Youreka-style defaults so all matplotlib/seaborn charts remain consistent.
+# Global journal-style defaults: plain white canvas, black text, no embedded titles.
 sns.set_theme(
-    style="whitegrid",
+    style="white",
     rc={
         "axes.facecolor": "#ffffff",
-        "figure.facecolor": PALETTE["bg"],
-        "axes.titleweight": "bold",
-        "axes.labelweight": "bold",
-        "axes.labelsize": 12,
+        "figure.facecolor": "#ffffff",
+        "font.family": "Arial",
+        "text.color": "black",
+        "axes.labelcolor": "black",
+        "axes.edgecolor": "black",
+        "axes.linewidth": 0.8,
+        "axes.labelsize": 11,
+        "xtick.color": "black",
+        "ytick.color": "black",
         "xtick.labelsize": 10,
         "ytick.labelsize": 10,
-        "grid.color": "#e2e8f0",
+        "grid.color": "#E6E6E6",
+        "grid.linewidth": 0.5,
     },
 )
 
 
-def save_figure(fig: plt.Figure, path: Path, dpi: int = 220) -> None:
-    """Save figures with consistent margins/background to avoid clipped labels."""
-    fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=0.16, facecolor="white", edgecolor="none")
+def style_axes(ax: plt.Axes, *, grid: bool = False, grid_axis: str = "both") -> None:
+    """Apply the conservative journal axis treatment used across manuscript figures."""
+    ax.set_title("")
+    ax.set_facecolor("white")
+    ax.tick_params(colors="black", width=0.8)
+    ax.xaxis.label.set_color("black")
+    ax.yaxis.label.set_color("black")
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color("black")
+        spine.set_linewidth(0.8)
+    if grid:
+        ax.grid(True, axis=grid_axis, color="#E6E6E6", linewidth=0.5)
+    else:
+        ax.grid(False)
+
+
+def save_figure(fig: plt.Figure, path: Path, dpi: int = 600) -> None:
+    """Save figures at journal resolution with a white background."""
+    tmp_path = path.with_name(f".{path.stem}.tmp{path.suffix}")
+    fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", pad_inches=0.16, facecolor="white", edgecolor="none")
+    for attempt in range(12):
+        try:
+            tmp_path.replace(path)
+            return
+        except PermissionError:
+            if attempt == 0:
+                try:
+                    path.unlink(missing_ok=True)
+                except PermissionError:
+                    pass
+            time.sleep(0.5)
+    tmp_path.replace(path)
 
 
 def human_label(name: str) -> str:
@@ -227,21 +270,21 @@ def normality_checks(df: pd.DataFrame) -> pd.DataFrame:
         rows.append({"variable": col, "n": int(s.shape[0]), "shapiro_W": stat, "p_value": p, "non_normal_p_lt_0_05": bool(p < 0.05) if pd.notna(p) else None})
 
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.hist(s, bins=15, color="#4C78A8", edgecolor="white")
-        ax.set_title(f"Histogram: {human_label(col)}")
+        ax.hist(s, bins=15, color=PALETTE["light_blue"], edgecolor="black", linewidth=0.4)
         ax.set_xlabel(human_label(col))
         ax.set_ylabel("Count")
+        style_axes(ax)
         fig.tight_layout()
-        save_figure(fig, FIG_DIR / HISTOGRAM_NAMES[col], dpi=200)
+        save_figure(fig, FIG_DIR / HISTOGRAM_NAMES[col])
         plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(5, 5))
         # Use scipy's probability plot to visualize normality assumptions.
         from scipy import stats
         stats.probplot(s, dist="norm", plot=ax)
-        ax.set_title(f"Q-Q: {human_label(col)}")
+        style_axes(ax)
         fig.tight_layout()
-        save_figure(fig, FIG_DIR / QQ_NAMES[col], dpi=200)
+        save_figure(fig, FIG_DIR / QQ_NAMES[col])
         plt.close(fig)
 
     out = pd.DataFrame(rows)
@@ -266,36 +309,53 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
     dunn_df = sp.posthoc_dunn(df, val_col="total_acb_codrugs_only", group_col="age_group", p_adjust="bonferroni")
     dunn_df.to_csv(TAB_DIR / FILE_NAMES["table_posthoc"])
 
+    df_age = df.loc[df["age_group"].isin(["13-15", "16-17", "18-19"])].copy()
     fig, ax = plt.subplots(figsize=(7.5, 5.2))
     order = ["13-15", "16-17", "18-19"]
-    sns.boxplot(
-        data=df,
+    sns.violinplot(
+        data=df_age,
         x="age_group",
         y="total_acb_codrugs_only",
         order=order,
         hue="age_group",
         legend=False,
-        palette=["#dbeafe", "#a7f3d0", "#fde68a"],
-        width=0.55,
+        palette=[PALETTE["light_blue"], PALETTE["light_orange"], PALETTE["light_gray"]],
+        inner=None,
+        linewidth=0.7,
+        cut=0,
         ax=ax,
     )
-    sns.stripplot(
-        data=df,
+    sns.boxplot(
+        data=df_age,
         x="age_group",
         y="total_acb_codrugs_only",
         order=order,
-        color=PALETTE["slate"],
-        alpha=0.35,
-        size=3.5,
+        hue="age_group",
+        legend=False,
+        palette=[PALETTE["light_blue"], PALETTE["light_orange"], PALETTE["light_gray"]],
+        width=0.28,
+        linewidth=0.7,
+        showfliers=False,
+        ax=ax,
+    )
+    sns.stripplot(
+        data=df_age,
+        x="age_group",
+        y="total_acb_codrugs_only",
+        order=order,
+        color=PALETTE["gray"],
+        alpha=0.16,
+        size=2.6,
         jitter=0.2,
         ax=ax,
     )
-    ymax = np.nanmax(df["total_acb_codrugs_only"]) if df["total_acb_codrugs_only"].notna().any() else 1
-    ax.set_ylim(top=ymax * 1.30 if ymax > 0 else 1.5)
-    ax.text(1, ymax * 1.05 if ymax > 0 else 0.5, f"Kruskal p={p_kw:.3g} {p_stars(p_kw)}", ha="center", color=PALETTE["red"], fontweight="bold")
+    y_cap = df_age["total_acb_codrugs_only"].quantile(0.99)
+    if not np.isfinite(y_cap) or y_cap <= 0:
+        y_cap = np.nanmax(df_age["total_acb_codrugs_only"]) if df_age["total_acb_codrugs_only"].notna().any() else 1
+    ax.set_ylim(0, y_cap * 1.20 if y_cap > 0 else 1.5)
 
     level_map = {lvl: idx for idx, lvl in enumerate(order)}
-    pair_y = ymax * 1.12 if ymax > 0 else 1
+    pair_y = y_cap * 1.05 if y_cap > 0 else 1
     # Draw significance brackets only for statistically significant pairwise contrasts.
     for a in order:
         for b in order:
@@ -304,15 +364,16 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
             pval = dunn_df.loc[a, b]
             if pd.notna(pval) and pval < 0.05:
                 xa, xb = level_map[a], level_map[b]
-                ax.plot([xa, xa, xb, xb], [pair_y, pair_y * 1.01, pair_y * 1.01, pair_y], color=PALETTE["slate"], lw=1.3)
-                ax.text((xa + xb) / 2, pair_y * 1.015, p_stars(float(pval)), ha="center", va="bottom", color=PALETTE["red"], fontsize=11)
-                pair_y *= 1.06
+                tick = y_cap * 0.025 if y_cap > 0 else 0.04
+                ax.plot([xa, xa, xb, xb], [pair_y, pair_y + tick, pair_y + tick, pair_y], color="black", lw=0.8)
+                ax.text((xa + xb) / 2, pair_y + tick * 1.15, p_stars(float(pval)), ha="center", va="bottom", color="black", fontsize=10)
+                pair_y += y_cap * 0.075 if y_cap > 0 else 0.08
 
-    ax.set_title("Co-medication ACB burden across age groups", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel(human_label("age_group"))
     ax.set_ylabel(human_label("total_acb_codrugs_only"))
+    style_axes(ax)
     fig.tight_layout()
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_age_group"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_age_group"])
     plt.close(fig)
 
     rho, p_sp = spearmanr(df["total_acb_codrugs_only"], df["max_severity"], nan_policy="omit")
@@ -324,15 +385,15 @@ def analysis_a_b_c(df: pd.DataFrame) -> pd.DataFrame:
         x="total_acb_codrugs_only",
         y="max_severity",
         lowess=True,
-        scatter_kws={"alpha": 0.75, "s": 40, "color": PALETTE["teal"]},
+        scatter_kws={"alpha": 0.45, "s": 22, "color": PALETTE["blue"]},
         line_kws={"color": PALETTE["orange"], "lw": 2.5},
         ax=ax,
     )
-    ax.set_title(f"Anticholinergic burden versus case severity (rho={rho:.2f}, p={p_sp:.3g})", color=PALETTE["blue"], fontweight="bold")
     ax.set_xlabel(human_label("total_acb_codrugs_only"))
     ax.set_ylabel(human_label("max_severity"))
+    style_axes(ax)
     fig.tight_layout()
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_severity"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_severity"])
     plt.close(fig)
 
     out = pd.DataFrame(rows)
@@ -447,9 +508,12 @@ def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[st
     fig, ax = plt.subplots(figsize=(7.0, 5.5))
     CalibrationDisplay.from_predictions(y, lr_prob, n_bins=5, name="Logistic (OOF)", ax=ax)
     CalibrationDisplay.from_predictions(y, rf_prob, n_bins=5, name="Random Forest (OOF)", ax=ax)
-    ax.set_title("Calibration curves (5-bin OOF probabilities)", color=PALETTE["blue"], fontweight="bold")
+    style_axes(ax, grid=True, grid_axis="both")
+    legend = ax.get_legend()
+    if legend is not None:
+        legend.set_frame_on(False)
     fig.tight_layout()
-    save_figure(fig, FIG_DIR / "calibration_curve_cv.png", dpi=220)
+    save_figure(fig, FIG_DIR / "calibration_curve_cv.png")
     plt.close(fig)
 
     # This model is strictly for SHAP interpretability. All AUC metrics come from CV above.
@@ -481,12 +545,178 @@ def run_cv_models(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict[st
             shap.summary_plot(shap_for_plot, X_display, show=False, plot_size=(11, 6.5))
             fig_shap = plt.gcf()
             fig_shap.subplots_adjust(left=0.28, right=0.98, top=0.93, bottom=0.18)
-            save_figure(fig_shap, FIG_DIR / "shap_beeswarm.png", dpi=300)
+            save_figure(fig_shap, FIG_DIR / "shap_beeswarm.png")
             plt.close()
     else:
         print("SHAP is not installed; skipping SHAP beeswarm export.")
 
     return pred_df, metrics, modeling_n
+
+
+def plot_dual_roc(cv_pred_df: pd.DataFrame) -> None:
+    """Render the manuscript ROC comparison from strict out-of-fold predictions."""
+    roc_df = cv_pred_df.dropna(subset=["cardiac_any", "lr_prob", "rf_prob"]).copy()
+    y = roc_df["cardiac_any"].astype(int)
+    auc_lr = roc_auc_score(y, roc_df["lr_prob"])
+    auc_rf = roc_auc_score(y, roc_df["rf_prob"])
+    fpr_lr, tpr_lr, _ = roc_curve(y, roc_df["lr_prob"])
+    fpr_rf, tpr_rf, _ = roc_curve(y, roc_df["rf_prob"])
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.plot(fpr_rf, tpr_rf, color=PALETTE["blue"], lw=1.8, label=f"Random forest (AUC={auc_rf:.3f})")
+    ax.plot(fpr_lr, tpr_lr, color=PALETTE["orange"], lw=1.8, label=f"Logistic regression (AUC={auc_lr:.3f})")
+    ax.plot([0, 1], [0, 1], color=PALETTE["gray"], ls="--", lw=1)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1.02)
+    ax.set_xlabel("1 - Specificity")
+    ax.set_ylabel("Sensitivity")
+    style_axes(ax)
+    ax.legend(loc="lower right", frameon=False)
+    fig.tight_layout()
+    save_figure(fig, FIG_DIR / "roc_dual.png")
+    save_figure(fig, FIG_DIR / "roc_dual.pdf")
+    plt.close(fig)
+
+
+def plot_sex_stratified_acb(df: pd.DataFrame) -> None:
+    """Render the sex-stratified supplementary burden figure when sex is available."""
+    demo_path = FILTERED / FILE_NAMES["demo"]
+    if not demo_path.exists():
+        print("Sex stratification skipped: teen_demo_records.csv not found.")
+        return
+
+    demo = pd.read_csv(demo_path, dtype=str, usecols=["PRIMARYID", "GNDR_COD"])
+    sex_df = (
+        df.assign(PRIMARYID=df["PRIMARYID"].astype(str))
+        .merge(demo.assign(PRIMARYID=demo["PRIMARYID"].astype(str)), on="PRIMARYID", how="left")
+        .assign(SEX=lambda d: d["GNDR_COD"].str.upper())
+    )
+    sex_df = sex_df.loc[sex_df["SEX"].isin(["F", "M"])].copy()
+    if sex_df["SEX"].nunique() < 2:
+        print("Sex stratification skipped: need both F and M groups.")
+        return
+
+    y_cap = sex_df["total_acb_codrugs_only"].quantile(0.99)
+    if not np.isfinite(y_cap) or y_cap <= 0:
+        y_cap = sex_df["total_acb_codrugs_only"].max()
+
+    fig, ax = plt.subplots(figsize=(8.8, 6.0))
+    order = ["F", "M"]
+    sns.violinplot(
+        data=sex_df,
+        x="SEX",
+        y="total_acb_codrugs_only",
+        order=order,
+        hue="SEX",
+        legend=False,
+        palette=[PALETTE["light_orange"], PALETTE["light_blue"]],
+        inner=None,
+        linewidth=0.7,
+        cut=0,
+        ax=ax,
+    )
+    sns.boxplot(
+        data=sex_df,
+        x="SEX",
+        y="total_acb_codrugs_only",
+        order=order,
+        hue="SEX",
+        legend=False,
+        palette=[PALETTE["light_orange"], PALETTE["light_blue"]],
+        width=0.22,
+        linewidth=0.7,
+        showfliers=False,
+        ax=ax,
+    )
+    sns.stripplot(
+        data=sex_df,
+        x="SEX",
+        y="total_acb_codrugs_only",
+        order=order,
+        color=PALETTE["gray"],
+        alpha=0.14,
+        size=2.5,
+        jitter=0.14,
+        ax=ax,
+    )
+    ax.set_ylim(0, y_cap * 1.08 if y_cap > 0 else 1.5)
+    ax.set_xlabel("Sex")
+    ax.set_ylabel(human_label("total_acb_codrugs_only"))
+    style_axes(ax)
+    fig.tight_layout()
+    save_figure(fig, FIG_DIR / "sex_stratified_acb_violin.png")
+    plt.close(fig)
+
+
+def plot_drug_cooccurrence_network() -> None:
+    """Render a conservative drug co-occurrence network without embedded titles."""
+    drug_path = ROOT / "04_processed" / "dph_drug_normalized.csv"
+    if not drug_path.exists():
+        print("Network analysis skipped: dph_drug_normalized.csv not found.")
+        return
+
+    drug_df = pd.read_csv(drug_path, dtype=str, usecols=["PRIMARYID", "DRUGNAME", "generic_name"])
+    drug_df["drug_name"] = drug_df["generic_name"].fillna("").str.strip().str.lower()
+    fallback = drug_df["drug_name"].eq("")
+    drug_df.loc[fallback, "drug_name"] = drug_df.loc[fallback, "DRUGNAME"].fillna("").str.strip().str.lower()
+    drug_df["drug_name"] = drug_df["drug_name"].replace(
+        {
+            "benadryl": "diphenhydramine",
+            "tylenol": "acetaminophen",
+            "advil": "ibuprofen",
+            "motrin": "ibuprofen",
+            "zofran": "ondansetron",
+        }
+    )
+    drug_df = drug_df.loc[drug_df["PRIMARYID"].notna() & drug_df["drug_name"].ne(""), ["PRIMARYID", "drug_name"]].drop_duplicates()
+
+    pair_counts: dict[tuple[str, str], int] = {}
+    for drugs in drug_df.groupby("PRIMARYID")["drug_name"]:
+        unique_drugs = sorted(set(drugs[1]))
+        for a, b in combinations(unique_drugs, 2):
+            pair_counts[(a, b)] = pair_counts.get((a, b), 0) + 1
+    if not pair_counts:
+        print("Network analysis skipped: no co-occurring drug pairs found.")
+        return
+
+    weights = np.array(list(pair_counts.values()), dtype=float)
+    threshold = max(2, int(np.floor(np.quantile(weights, 0.75))))
+    graph = nx.Graph()
+    for (a, b), weight in pair_counts.items():
+        if weight >= threshold:
+            graph.add_edge(a, b, weight=weight)
+    if graph.number_of_edges() == 0:
+        print("Network analysis skipped: no edges met the threshold.")
+        return
+
+    largest_nodes = max(nx.connected_components(graph), key=len)
+    graph = graph.subgraph(largest_nodes).copy()
+    strength = dict(graph.degree(weight="weight"))
+    keep_nodes = sorted(strength, key=strength.get, reverse=True)[:55]
+    graph = graph.subgraph(keep_nodes).copy()
+    strength = dict(graph.degree(weight="weight"))
+
+    pos = nx.spring_layout(graph, seed=42, weight="weight", k=0.55)
+    edge_weights = np.array([graph.edges[e]["weight"] for e in graph.edges], dtype=float)
+    edge_widths = 0.4 + 1.8 * (edge_weights - edge_weights.min()) / (np.ptp(edge_weights) or 1)
+    node_sizes = [80 + 520 * strength[n] / max(strength.values()) for n in graph.nodes]
+
+    fig, ax = plt.subplots(figsize=(13, 9))
+    ax.set_facecolor("white")
+    nx.draw_networkx_edges(graph, pos, ax=ax, width=edge_widths, edge_color="#9A9A9A", alpha=0.45)
+    nx.draw_networkx_nodes(graph, pos, ax=ax, node_size=node_sizes, node_color=PALETTE["blue"], edgecolors="black", linewidths=0.4, alpha=0.92)
+    nx.draw_networkx_labels(
+        graph,
+        pos,
+        ax=ax,
+        font_size=7,
+        font_color="black",
+        bbox={"boxstyle": "round,pad=0.15", "facecolor": "white", "edgecolor": "#BDBDBD", "linewidth": 0.3, "alpha": 0.9},
+    )
+    ax.axis("off")
+    fig.tight_layout()
+    save_figure(fig, FIG_DIR / "drug_cooccurrence_network.png")
+    plt.close(fig)
 
 
 def save_bh_table(tests: pd.DataFrame) -> pd.DataFrame:
@@ -532,44 +762,42 @@ def logistic_and_forest(df: pd.DataFrame, cv_pred_df: pd.DataFrame | None = None
     y = np.arange(len(forest_df))
     has_ci = forest_df["CI_low"].notna().all() and forest_df["CI_high"].notna().all()
     if has_ci:
-        ax.hlines(y, forest_df["CI_low"], forest_df["CI_high"], color=PALETTE["teal"], lw=2.3)
-    ax.scatter(forest_df["OR"], y, color=PALETTE["orange"], s=55, zorder=3, edgecolor="white", linewidth=0.8)
+        ax.hlines(y, forest_df["CI_low"], forest_df["CI_high"], color=PALETTE["blue"], lw=1.6)
+    ax.scatter(forest_df["OR"], y, color=PALETTE["orange"], s=48, zorder=3, edgecolor="black", linewidth=0.4)
     ax.axvline(1.0, color="black", ls="--", lw=1)
     ax.set_yticks(y)
     ax.set_yticklabels([human_label(term) for term in forest_df["term"]])
     ax.set_xscale("log")
-    ax.set_xlabel("Odds Ratio (log scale)")
+    ax.set_xlabel("Odds ratio (log scale)")
     ax.set_ylabel("Clinical predictor")
-    ax.set_title("Adjusted odds ratios for cardiac toxicity", color=PALETTE["blue"], fontweight="bold")
-    ax.grid(axis="x", alpha=0.35)
-    fig.subplots_adjust(left=0.38, right=0.98, top=0.90, bottom=0.18)
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"], dpi=220)
+    style_axes(ax, grid=True, grid_axis="x")
+    fig.subplots_adjust(left=0.38, right=0.98, top=0.96, bottom=0.18)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"])
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_forest"].replace(".png", ".pdf"))
     plt.close(fig)
 
     # Prefer strict out-of-fold probabilities for ROC plotting to avoid in-sample leakage.
     if cv_pred_df is not None and {"cardiac_any", "lr_prob"}.issubset(cv_pred_df.columns):
         roc_df = cv_pred_df.dropna(subset=["cardiac_any", "lr_prob"]).copy()
         score_col = "lr_prob"
-        roc_title = "ROC curve for the cardiac risk model (OOF logistic probabilities)"
         auc = roc_auc_score(roc_df["cardiac_any"], roc_df[score_col])
     else:
         roc_df = pred_df.dropna(subset=["cardiac_any", "pred_prob"]).copy()
         score_col = "pred_prob"
-        roc_title = "ROC curve for the cardiac risk model (in-sample fallback)"
         auc = fit_full["auc"]
 
     fpr, tpr, _ = roc_curve(roc_df["cardiac_any"], roc_df[score_col])
     fig, ax = plt.subplots(figsize=(6.8, 6.0))
-    ax.plot(fpr, tpr, color=PALETTE["teal"], lw=2.5, label=f"AUC = {auc:.3f}")
-    ax.plot([0, 1], [0, 1], color=PALETTE["slate"], ls="--", lw=1.2)
+    ax.plot(fpr, tpr, color=PALETTE["blue"], lw=1.8, label=f"AUC = {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=PALETTE["gray"], ls="--", lw=1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
-    ax.set_xlabel("False Positive Rate")
-    ax.set_ylabel("True Positive Rate")
-    ax.set_title(roc_title, color=PALETTE["blue"], fontweight="bold")
-    ax.legend(loc="lower right", frameon=True)
+    ax.set_xlabel("False positive rate")
+    ax.set_ylabel("True positive rate")
+    style_axes(ax)
+    ax.legend(loc="lower right", frameon=False)
     fig.tight_layout()
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_roc"])
     plt.close(fig)
 
     pd.DataFrame(fit_rows).to_csv(TAB_DIR / FILE_NAMES["table_fit"], index=False)
@@ -589,16 +817,15 @@ def plot_flowchart(counts: dict[str, int]) -> None:
     ]
 
     for (x, y, w, h, text) in boxes:
-        rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.02", edgecolor=PALETTE["blue"], facecolor="#e2e8f0", linewidth=1.4)
+        rect = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.02", edgecolor="black", facecolor="white", linewidth=0.8)
         ax.add_patch(rect)
-        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=10, color=PALETTE["slate"], fontweight="bold")
+        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=10, color="black")
 
     for y1, y2 in [(0.80, 0.74), (0.62, 0.56), (0.44, 0.38)]:
-        ax.annotate("", xy=(0.5, y2), xytext=(0.5, y1), arrowprops=dict(arrowstyle="->", lw=1.4))
+        ax.annotate("", xy=(0.5, y2), xytext=(0.5, y1), arrowprops=dict(arrowstyle="->", lw=0.9, color="black"))
 
-    ax.set_title("Cohort flow summary", fontsize=12, color=PALETTE["blue"], fontweight="bold")
     fig.tight_layout()
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_flow"], dpi=220)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_flow"])
     plt.close(fig)
 
 
@@ -648,7 +875,7 @@ def save_summary(
 
 def make_dashboard() -> None:
     """Assemble a 2x2 dashboard image from the core generated figures."""
-    fig = plt.figure(figsize=(14, 10), facecolor=PALETTE["bg"], constrained_layout=True)
+    fig = plt.figure(figsize=(14, 10), facecolor="white", constrained_layout=True)
     gs = fig.add_gridspec(2, 2, wspace=0.25, hspace=0.3)
 
     files = [
@@ -657,18 +884,48 @@ def make_dashboard() -> None:
         FIG_DIR / FILE_NAMES["figure_forest"],
         FIG_DIR / FILE_NAMES["figure_roc"],
     ]
-    titles = ["Cohort Flow", "ACB by Age Group", "Adjusted Logistic ORs", "Cardiac Risk ROC"]
-
-    for i, (img_path, title) in enumerate(zip(files, titles)):
+    for i, img_path in enumerate(files):
         ax = fig.add_subplot(gs[i // 2, i % 2])
         img = plt.imread(img_path)
         ax.imshow(img)
         ax.axis("off")
-        ax.set_title(title, fontsize=12, fontweight="bold", color=PALETTE["blue"], pad=10)
 
-    fig.suptitle("Adolescent diphenhydramine FAERS results overview", fontsize=15, fontweight="bold", color=PALETTE["blue"])
-    save_figure(fig, FIG_DIR / FILE_NAMES["figure_dashboard"], dpi=240)
+    save_figure(fig, FIG_DIR / FILE_NAMES["figure_dashboard"])
     plt.close(fig)
+
+
+def export_submission_figures() -> None:
+    """Copy manuscript figures into journal submission filenames."""
+    final_names = [
+        FILE_NAMES["figure_flow"],
+        FILE_NAMES["figure_age_group"],
+        FILE_NAMES["figure_severity"],
+        FILE_NAMES["figure_forest"],
+        FILE_NAMES["figure_roc"],
+        "roc_dual.png",
+        "calibration_curve_cv.png",
+        "shap_beeswarm.png",
+        "drug_cooccurrence_network.png",
+        "sex_stratified_acb_violin.png",
+    ]
+    for name in final_names:
+        src = FIG_DIR / name
+        if src.exists():
+            shutil.copy2(src, FINAL_FIG_DIR / name)
+
+    mapping = {
+        "Figure_1.png": FIG_DIR / FILE_NAMES["figure_flow"],
+        "Figure_2.png": FIG_DIR / HISTOGRAM_NAMES["AGE"],
+        "Figure_3.png": FIG_DIR / FILE_NAMES["figure_age_group"],
+        "Figure_4.png": FIG_DIR / FILE_NAMES["figure_severity"],
+        "Figure_5.png": FIG_DIR / "roc_dual.png",
+        "Figure_5.pdf": FIG_DIR / "roc_dual.pdf",
+        "Figure_6.png": FIG_DIR / FILE_NAMES["figure_forest"],
+        "Figure_6.pdf": FIG_DIR / FILE_NAMES["figure_forest"].replace(".png", ".pdf"),
+    }
+    for filename, src in mapping.items():
+        if src.exists():
+            shutil.copy2(src, SUBMISSION_FIG_DIR / filename)
 
 
 if __name__ == "__main__":
@@ -683,12 +940,16 @@ if __name__ == "__main__":
     norm = normality_checks(df)
     tests = analysis_a_b_c(df)
     cv_pred_df, cv_metrics, modeling_n = run_cv_models(df)
+    plot_dual_roc(cv_pred_df)
     fit = logistic_and_forest(df, cv_pred_df=cv_pred_df)
     save_bh_table(tests)
+    plot_sex_stratified_acb(df)
+    plot_drug_cooccurrence_network()
 
     # 3) Write summaries and composite dashboard for reporting.
     save_summary(counts, norm, tests, fit, cv_metrics, modeling_n)
     make_dashboard()
+    export_submission_figures()
 
     # Save lightweight metadata so downstream reports can verify input/version context.
     (OUT_DIR / FILE_NAMES["metadata"]).write_text(

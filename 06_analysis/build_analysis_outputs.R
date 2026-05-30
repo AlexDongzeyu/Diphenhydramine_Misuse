@@ -14,25 +14,25 @@ has_introdataviz <- requireNamespace("introdataviz", quietly = TRUE)
 
 # Global Youreka visual system: one palette + one baseline theme for all figures.
 youreka_colors <- c(
-  blue = "#1f4e79",
-  teal = "#1f7a8c",
-  orange = "#f59e0b",
-  red = "#b91c1c",
-  slate = "#334155",
-  blue_light = "#c7d7ea",
-  orange_light = "#f3dd86",
-  mint_light = "#a8e6c8"
+  blue = "#4C78A8",
+  orange = "#D28E3D",
+  gray = "#7F7F7F",
+  blue_light = "#DCE6F2",
+  orange_light = "#F2E1C8",
+  gray_light = "#E6E6E6"
 )
 
 theme_set(
-  theme_minimal(base_size = 13) +
+  theme_classic(base_size = 11, base_family = "Arial") +
     theme(
-      plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 16),
-      plot.subtitle = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 11),
-      axis.title = element_text(color = "#2f2f2f", face = "bold"),
-      legend.title = element_text(face = "bold"),
+      text = element_text(color = "black"),
+      axis.title = element_text(color = "black"),
+      axis.text = element_text(color = "black"),
+      axis.line = element_line(color = "black", linewidth = 0.4),
+      axis.ticks = element_line(color = "black", linewidth = 0.4),
+      legend.title = element_blank(),
       panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "#e5e7eb", linewidth = 0.55),
+      panel.grid.major = element_blank(),
       panel.background = element_rect(fill = "white", color = NA),
       plot.background = element_rect(fill = "white", color = NA)
     )
@@ -41,8 +41,10 @@ theme_set(
 out_dir <- "06_analysis"
 fig_dir <- file.path(out_dir, "figures")
 tab_dir <- file.path(out_dir, "tables")
+submission_fig_dir <- file.path(fig_dir, "submission")
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(tab_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(submission_fig_dir, showWarnings = FALSE, recursive = TRUE)
 
 df <- read_csv("05_final/cohort_analysis.csv", show_col_types = FALSE)
 
@@ -190,13 +192,15 @@ if (file.exists(cv_pred_path)) {
 
   p_roc <- ggroc(roc_list, legacy.axes = TRUE) +
     geom_abline(linetype = "dashed", color = "grey50") +
-    labs(title = "ROC curve comparison", x = "1 - Specificity", y = "Sensitivity") +
+    labs(x = "1 - Specificity", y = "Sensitivity") +
     theme_classic(base_size = 12) +
     theme(
-      plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold"),
       legend.title = element_blank()
     )
-  ggsave(file.path(fig_dir, "roc_dual.png"), p_roc, width = 7, height = 5, dpi = 300)
+  ggsave(file.path(fig_dir, "roc_dual.png"), p_roc, width = 7, height = 5, dpi = 600, bg = "white")
+  ggsave(file.path(fig_dir, "roc_dual.pdf"), p_roc, width = 7, height = 5, bg = "white")
+  file.copy(file.path(fig_dir, "roc_dual.png"), file.path(submission_fig_dir, "Figure_5.png"), overwrite = TRUE)
+  file.copy(file.path(fig_dir, "roc_dual.pdf"), file.path(submission_fig_dir, "Figure_5.pdf"), overwrite = TRUE)
 } else {
   warning("model_predictions_cv.csv was not found; skipping DeLong ROC test.")
 }
@@ -308,13 +312,11 @@ p1 <- ggplot(df, aes(x = factor(cardiac_any), y = total_acb_codrugs_only, fill =
   geom_jitter(width = 0.14, alpha = 0.25, size = 1.2, color = "gray40") +
   scale_fill_manual(values = c("0" = youreka_colors[["blue_light"]], "1" = youreka_colors[["orange_light"]])) +
   labs(
-    title = "Anticholinergic burden by cardiac toxicity outcome",
-    subtitle = "Co-medication anticholinergic burden by outcome group",
     x = "Cardiac toxicity outcome (0 = no, 1 = yes)",
     y = "Total anticholinergic burden from co-medications"
   ) +
   theme(legend.position = "none")
-ggsave(file.path(fig_dir, "acb_by_cardiac_outcome.png"), p1, width = 8.2, height = 5.8, dpi = 260)
+ggsave(file.path(fig_dir, "acb_by_cardiac_outcome.png"), p1, width = 8.2, height = 5.8, dpi = 600, bg = "white")
 
 p_stars <- function(p) {
   if (is.na(p)) return("ns")
@@ -327,6 +329,13 @@ p_stars <- function(p) {
 df_age <- df %>%
   filter(!is.na(age_group), !is.na(total_acb_codrugs_only)) %>%
   mutate(age_group = factor(as.character(age_group), levels = c("13-15", "16-17", "18-19")))
+
+dunn_age_path <- file.path(tab_dir, "age_group_posthoc.csv")
+dunn_age <- if (file.exists(dunn_age_path)) {
+  read.csv(dunn_age_path, row.names = 1, check.names = FALSE)
+} else {
+  NULL
+}
 
 y_cap_age <- as.numeric(quantile(df_age$total_acb_codrugs_only, probs = 0.99, na.rm = TRUE))
 if (!is.finite(y_cap_age) || y_cap_age <= 0) {
@@ -341,42 +350,47 @@ p2 <- ggplot(df_age, aes(x = age_group, y = total_acb_codrugs_only, fill = age_g
   geom_violin(width = 0.62, alpha = 0.18, color = "gray35", linewidth = 0.5, trim = FALSE) +
   geom_boxplot(width = 0.30, alpha = 0.72, outlier.shape = NA, linewidth = 0.8) +
   geom_jitter(width = 0.14, alpha = 0.10, size = 1.0, color = "gray35") +
-  scale_fill_manual(values = c("13-15" = youreka_colors[["blue_light"]], "16-17" = youreka_colors[["orange_light"]], "18-19" = youreka_colors[["mint_light"]])) +
-  coord_cartesian(ylim = c(0, y_cap_age * 1.06)) +
+  scale_fill_manual(values = c("13-15" = youreka_colors[["blue_light"]], "16-17" = youreka_colors[["orange_light"]], "18-19" = youreka_colors[["gray_light"]])) +
+  coord_cartesian(ylim = c(0, y_cap_age * 1.20)) +
   labs(
-    title = "Co-medication ACB by Age Group",
-    subtitle = "Display range capped at 99th percentile for readability; statistics use full data",
     x = "Age group",
     y = "Total ACB (co-medications only)"
   ) +
-  annotate("text", x = 2, y = label_y, label = kw_label, color = "#b91c1c", fontface = "bold", size = 4.4) +
   theme(
-    legend.position = "none",
-    plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 17),
-    plot.subtitle = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 12)
+    legend.position = "none"
   )
 
-if (!is.na(kw$p.value) && kw$p.value < 0.05) {
-  bracket_y <- y_cap_age * 0.94
-  p2 <- p2 +
-    annotate("segment", x = 2, xend = 3, y = bracket_y, yend = bracket_y, color = "gray30", linewidth = 0.6) +
-    annotate("segment", x = 2, xend = 2, y = bracket_y, yend = bracket_y - y_cap_age * 0.02, color = "gray30", linewidth = 0.6) +
-    annotate("segment", x = 3, xend = 3, y = bracket_y, yend = bracket_y - y_cap_age * 0.02, color = "gray30", linewidth = 0.6) +
-    annotate("text", x = 2.5, y = bracket_y + y_cap_age * 0.03, label = p_stars(kw$p.value), color = "#b91c1c", fontface = "bold", size = 4.4)
+if (!is.null(dunn_age)) {
+  sig_pairs <- tibble(
+    x_start = c(1, 1),
+    x_end = c(2, 3),
+    group_a = c("13-15", "13-15"),
+    group_b = c("16-17", "18-19"),
+    p_value = c(dunn_age["13-15", "16-17"], dunn_age["13-15", "18-19"]),
+    y = c(y_cap_age * 1.04, y_cap_age * 1.12)
+  ) %>% filter(!is.na(p_value), p_value < 0.05)
+
+  for (i in seq_len(nrow(sig_pairs))) {
+    row <- sig_pairs[i, ]
+    tick <- y_cap_age * 0.025
+    p2 <- p2 +
+      annotate("segment", x = row$x_start, xend = row$x_end, y = row$y, yend = row$y, color = "black", linewidth = 0.4) +
+      annotate("segment", x = row$x_start, xend = row$x_start, y = row$y, yend = row$y - tick, color = "black", linewidth = 0.4) +
+      annotate("segment", x = row$x_end, xend = row$x_end, y = row$y, yend = row$y - tick, color = "black", linewidth = 0.4) +
+      annotate("text", x = (row$x_start + row$x_end) / 2, y = row$y + tick, label = p_stars(row$p_value), color = "black", size = 4)
+  }
 }
 
-ggsave(file.path(fig_dir, "acb_by_age_group.png"), p2, width = 8.4, height = 6.2, dpi = 260)
+ggsave(file.path(fig_dir, "acb_by_age_group.png"), p2, width = 8.4, height = 6.2, dpi = 600, bg = "white")
 
 p3 <- ggplot(df, aes(x = total_acb_codrugs_only, y = max_severity)) +
-  geom_point(color = youreka_colors[["teal"]], alpha = 0.65, size = 1.8) +
+  geom_point(color = youreka_colors[["blue"]], alpha = 0.45, size = 1.6) +
   geom_smooth(method = "loess", se = FALSE, color = youreka_colors[["orange"]], linewidth = 1.2) +
   labs(
-    title = "Anticholinergic burden versus case severity",
-    subtitle = "Smoothed relationship between co-medication burden and severity",
     x = "Total anticholinergic burden from co-medications",
     y = "Maximum reported case severity"
   )
-ggsave(file.path(fig_dir, "acb_vs_severity.png"), p3, width = 8.2, height = 5.8, dpi = 260)
+ggsave(file.path(fig_dir, "acb_vs_severity.png"), p3, width = 8.2, height = 5.8, dpi = 600, bg = "white")
 
 # Phase 5 figure with raw p-value, BH status, and rank-biserial effect size.
 sex_bh_status <- p_values_tbl %>%
@@ -405,18 +419,15 @@ if (nrow(sex_df) > 0 && length(unique(sex_df$SEX)) == 2) {
   p_sex <- p_sex +
     geom_boxplot(width = 0.16, outlier.shape = NA, alpha = 0.78, linewidth = 0.8) +
     geom_jitter(width = 0.08, alpha = 0.10, size = 1.0, color = "gray35") +
-    scale_fill_manual(values = c("F" = youreka_colors[["mint_light"]], "M" = youreka_colors[["blue_light"]])) +
+    scale_fill_manual(values = c("F" = youreka_colors[["orange_light"]], "M" = youreka_colors[["blue_light"]])) +
     coord_cartesian(ylim = c(0, y_cap_sex * 1.06)) +
     labs(
-      title = "Sex-stratified anticholinergic burden (co-medications)",
-      subtitle = paste("Unknown sex excluded |", sex_caption, "| display capped at 99th percentile"),
       x = "Sex",
       y = "Total anticholinergic burden from co-medications"
     ) +
-    theme_classic(base_size = 12) +
     theme(legend.position = "none")
 
-  ggsave(file.path(fig_dir, "sex_stratified_acb_violin.png"), p_sex, width = 8.8, height = 6.0, dpi = 280)
+  ggsave(file.path(fig_dir, "sex_stratified_acb_violin.png"), p_sex, width = 8.8, height = 6.0, dpi = 600, bg = "white")
 }
 
 # Phase 4: Drug co-occurrence network analysis
@@ -528,17 +539,15 @@ if (file.exists(drug_path)) {
           label.padding = unit(0.12, "lines"),
           label.size = 0.15,
           fill = "#ffffff",
-          color = "#1f2937",
+          color = "black",
           segment.color = "#9ca3af",
           max.overlaps = Inf
         ) +
-        labs(title = "Drug co-occurrence network") +
         theme_void(base_size = 12) +
         theme(
           plot.background = element_rect(fill = "white", color = NA),
           panel.background = element_rect(fill = "white", color = NA),
-          plot.margin = margin(14, 22, 12, 22),
-          plot.title = element_text(hjust = 0.5, color = youreka_colors[["blue"]], face = "bold", size = 16)
+          plot.margin = margin(14, 22, 12, 22)
         )
 
       ggsave(
@@ -546,7 +555,7 @@ if (file.exists(drug_path)) {
         net_plot,
         width = 13,
         height = 9,
-        dpi = 260,
+        dpi = 600,
         bg = "white"
       )
     }
@@ -562,3 +571,25 @@ writeLines(c(
   "Outputs written to 06_analysis/tables and 06_analysis/figures.",
   "Includes DeLong ROC testing, BH correction, network analysis, and sex stratification."
 ), con = file.path(out_dir, "results_summary_r.txt"))
+
+submission_files <- c(
+  Figure_1 = "cohort_flow.png",
+  Figure_2 = "age_histogram.png",
+  Figure_3 = "acb_by_age_group.png",
+  Figure_4 = "acb_vs_severity.png",
+  Figure_5 = "roc_dual.png",
+  Figure_6 = "logistic_odds_ratios.png"
+)
+for (fig_name in names(submission_files)) {
+  src <- file.path(fig_dir, submission_files[[fig_name]])
+  if (file.exists(src)) {
+    file.copy(src, file.path(submission_fig_dir, paste0(fig_name, ".png")), overwrite = TRUE)
+  }
+}
+pdf_files <- c("Figure_5" = "roc_dual.pdf", "Figure_6" = "logistic_odds_ratios.pdf")
+for (fig_name in names(pdf_files)) {
+  src <- file.path(fig_dir, pdf_files[[fig_name]])
+  if (file.exists(src)) {
+    file.copy(src, file.path(submission_fig_dir, paste0(fig_name, ".pdf")), overwrite = TRUE)
+  }
+}
